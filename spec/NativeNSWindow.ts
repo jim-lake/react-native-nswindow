@@ -16,11 +16,7 @@ export type WindowLevel =
   | 'statusBar'
   | 'screenSaver';
 
-export interface WindowProps {
-  componentName: string;
-  windowName: string;
-  initialProps?: Record<string, unknown>;
-
+export interface ModifyableWindowProps {
   x?: number;
   y?: number;
   width?: number;
@@ -57,11 +53,11 @@ export interface WindowProps {
   focusOnCreate?: boolean;
   autoSaveFrame?: string;
 }
-
-export type ModifyableWindowProps = Partial<
-  Omit<WindowProps, 'componentName' | 'windowName' | 'initialProps'>
->;
-
+export interface WindowProps extends ModifyableWindowProps {
+  componentName: string;
+  windowName: string;
+  initialProps?: Object;
+}
 export interface WindowState {
   windowId: string;
   windowName: string;
@@ -77,12 +73,12 @@ export interface WindowState {
 
 export type WindowId = string;
 
-export interface WindowMovePayload extends WindowIdPayload {
+export interface WindowMovePayload {
   windowId: string;
   x: number;
   y: number;
 }
-export interface WindowResizePayload extends WindowIdPayload {
+export interface WindowResizePayload {
   windowId: string;
   width: number;
   height: number;
