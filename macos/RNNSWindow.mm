@@ -116,7 +116,10 @@
   }
   NSString *windowId = [[NSUUID UUID] UUIDString];
   _windows[windowId] = window;
-  _windowNames[windowId] = @"external";
+  NSString *name = window.title.length > 0
+                       ? window.title
+                       : NSStringFromClass([window class]) ?: @"unknown";
+  _windowNames[windowId] = name;
   return windowId;
 }
 
@@ -215,20 +218,9 @@
 - (void)syncWithAppWindows {
   NSArray<NSWindow *> *appWindows = [NSApp windows];
 
-  // Add untracked windows
+  // Add untracked windows (windowIdForWindow auto-registers)
   for (NSWindow *window in appWindows) {
-    BOOL found = NO;
-    for (NSWindow *tracked in _windows.allValues) {
-      if (tracked == window) {
-        found = YES;
-        break;
-      }
-    }
-    if (!found) {
-      NSString *windowId = [[NSUUID UUID] UUIDString];
-      _windows[windowId] = window;
-      _windowNames[windowId] = @"external";
-    }
+    [self windowIdForWindow:window];
   }
 
   // Remove gone windows
