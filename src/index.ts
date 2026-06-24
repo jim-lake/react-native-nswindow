@@ -5,7 +5,7 @@ export type {
   WindowProps,
   ModifyableWindowProps,
   WindowState,
-  WindowIdPayload,
+  WindowId,
   WindowMovePayload,
   WindowResizePayload,
   Spec,

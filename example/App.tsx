@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import NSWindowModule from 'react-native-nswindow';
 import type {
-  WindowIdPayload,
   WindowMovePayload,
   WindowResizePayload,
 } from 'react-native-nswindow';
@@ -19,7 +18,7 @@ console.log('[NSWindowExample] App.tsx loading...');
 console.log('[NSWindowExample] NSWindowModule:', NSWindowModule);
 console.log(
   '[NSWindowExample] NSWindowModule keys:',
-  Object.getOwnPropertyNames(NSWindowModule),
+  Object.getOwnPropertyNames(NSWindowModule)
 );
 
 // ─── Secondary window components ───
@@ -34,11 +33,11 @@ function NotesWindow() {
         style={styles.textInput}
         multiline
         value={text}
-        onChangeText={v => {
+        onChangeText={(v) => {
           console.log('[NotesWindow] onChangeText:', v.length, 'chars');
           setText(v);
         }}
-        placeholder="Type notes here..."
+        placeholder='Type notes here...'
       />
     </View>
   );
@@ -72,75 +71,75 @@ function App() {
 
   const appendLog = (msg: string) => {
     console.log('[App Event]', msg);
-    setLog(prev =>
-      [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 50),
+    setLog((prev) =>
+      [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 50)
     );
   };
 
   useEffect(() => {
     console.log('[App] useEffect - setting up event listeners');
     const subs = [
-      NSWindowModule.onWindowClose((p: WindowIdPayload) => {
-        console.log('[App] onWindowClose:', p);
-        appendLog(`close: ${p.windowId.slice(0, 8)}`);
+      NSWindowModule.onWindowClose((windowId: string) => {
+        console.log('[App] onWindowClose:', windowId);
+        appendLog(`close: ${windowId.slice(0, 8)}`);
       }),
-      NSWindowModule.onWindowWillClose((p: WindowIdPayload) => {
-        console.log('[App] onWindowWillClose:', p);
-        appendLog(`willClose: ${p.windowId.slice(0, 8)}`);
+      NSWindowModule.onWindowWillClose((windowId: string) => {
+        console.log('[App] onWindowWillClose:', windowId);
+        appendLog(`willClose: ${windowId.slice(0, 8)}`);
       }),
-      NSWindowModule.onWindowFocus((p: WindowIdPayload) => {
-        console.log('[App] onWindowFocus:', p);
-        appendLog(`focus: ${p.windowId.slice(0, 8)}`);
+      NSWindowModule.onWindowFocus((windowId: string) => {
+        console.log('[App] onWindowFocus:', windowId);
+        appendLog(`focus: ${windowId.slice(0, 8)}`);
       }),
-      NSWindowModule.onWindowBlur((p: WindowIdPayload) => {
-        console.log('[App] onWindowBlur:', p);
-        appendLog(`blur: ${p.windowId.slice(0, 8)}`);
+      NSWindowModule.onWindowBlur((windowId: string) => {
+        console.log('[App] onWindowBlur:', windowId);
+        appendLog(`blur: ${windowId.slice(0, 8)}`);
       }),
       NSWindowModule.onWindowMove((p: WindowMovePayload) => {
         console.log('[App] onWindowMove:', p);
         appendLog(
-          `move: ${p.windowId.slice(0, 8)} → (${Math.round(p.x)},${Math.round(p.y)})`,
+          `move: ${p.windowId.slice(0, 8)} → (${Math.round(p.x)},${Math.round(p.y)})`
         );
       }),
       NSWindowModule.onWindowResize((p: WindowResizePayload) => {
         console.log('[App] onWindowResize:', p);
         appendLog(
-          `resize: ${p.windowId.slice(0, 8)} → ${Math.round(p.width)}x${Math.round(p.height)}`,
+          `resize: ${p.windowId.slice(0, 8)} → ${Math.round(p.width)}x${Math.round(p.height)}`
         );
       }),
-      NSWindowModule.onWindowMinimize((p: WindowIdPayload) => {
-        console.log('[App] onWindowMinimize:', p);
-        appendLog(`minimize: ${p.windowId.slice(0, 8)}`);
+      NSWindowModule.onWindowMinimize((windowId: string) => {
+        console.log('[App] onWindowMinimize:', windowId);
+        appendLog(`minimize: ${windowId.slice(0, 8)}`);
       }),
-      NSWindowModule.onWindowDeminimize((p: WindowIdPayload) => {
-        console.log('[App] onWindowDeminimize:', p);
-        appendLog(`deminimize: ${p.windowId.slice(0, 8)}`);
+      NSWindowModule.onWindowDeminimize((windowId: string) => {
+        console.log('[App] onWindowDeminimize:', windowId);
+        appendLog(`deminimize: ${windowId.slice(0, 8)}`);
       }),
-      NSWindowModule.onWindowEnterFullScreen((p: WindowIdPayload) => {
-        console.log('[App] onWindowEnterFullScreen:', p);
-        appendLog(`enterFS: ${p.windowId.slice(0, 8)}`);
+      NSWindowModule.onWindowEnterFullScreen((windowId: string) => {
+        console.log('[App] onWindowEnterFullScreen:', windowId);
+        appendLog(`enterFS: ${windowId.slice(0, 8)}`);
       }),
-      NSWindowModule.onWindowExitFullScreen((p: WindowIdPayload) => {
-        console.log('[App] onWindowExitFullScreen:', p);
-        appendLog(`exitFS: ${p.windowId.slice(0, 8)}`);
+      NSWindowModule.onWindowExitFullScreen((windowId: string) => {
+        console.log('[App] onWindowExitFullScreen:', windowId);
+        appendLog(`exitFS: ${windowId.slice(0, 8)}`);
       }),
     ];
     console.log('[App] Event listeners registered:', subs.length);
     return () => {
       console.log('[App] Cleaning up event listeners');
-      subs.forEach(s => s.remove());
+      subs.forEach((s) => s.remove());
     };
   }, []);
 
   // Handle willClose by always acknowledging (allow close)
   useEffect(() => {
     console.log('[App] useEffect - setting up willClose acknowledger');
-    const sub = NSWindowModule.onWindowWillClose((p: WindowIdPayload) => {
+    const sub = NSWindowModule.onWindowWillClose((windowId: string) => {
       console.log(
         '[App] willClose acknowledger - acknowledging close for:',
-        p.windowId,
+        windowId
       );
-      NSWindowModule.acknowledgeClose(p.windowId, true);
+      NSWindowModule.acknowledgeClose(windowId, true);
     });
     return () => {
       console.log('[App] Cleaning up willClose acknowledger');
@@ -167,6 +166,7 @@ function App() {
       const id = await NSWindowModule.addWindow({
         componentName: 'NotesWindow',
         windowName: 'notes',
+        initialProps: {},
         title: 'Notes',
         width: 400,
         height: 300,
@@ -213,6 +213,7 @@ function App() {
       const id = await NSWindowModule.addWindow({
         componentName: 'MiniWindow',
         windowName: 'mini',
+        initialProps: {},
         title: 'Mini',
         width: 150,
         height: 100,
@@ -238,6 +239,7 @@ function App() {
       const id = await NSWindowModule.addWindow({
         componentName: 'NotesWindow',
         windowName: 'hidden-test',
+        initialProps: {},
         title: 'Hidden Window',
         show: false,
         width: 400,
@@ -277,28 +279,28 @@ function App() {
       <Text style={styles.section}>Create Windows</Text>
       <View style={styles.row}>
         <Button
-          title="📝 Notes"
+          title='📝 Notes'
           onPress={() => {
             console.log('[App] Button press: Notes');
             openNotes();
           }}
         />
         <Button
-          title="🎨 Color"
+          title='🎨 Color'
           onPress={() => {
             console.log('[App] Button press: Color');
             openColor();
           }}
         />
         <Button
-          title="🔲 Mini (On Top)"
+          title='🔲 Mini (On Top)'
           onPress={() => {
             console.log('[App] Button press: Mini');
             openMini();
           }}
         />
         <Button
-          title="👻 Hidden"
+          title='👻 Hidden'
           onPress={() => {
             console.log('[App] Button press: Hidden');
             openHidden();
@@ -311,76 +313,76 @@ function App() {
       </Text>
       <View style={styles.row}>
         <Button
-          title="Refresh List"
+          title='Refresh List'
           onPress={() => {
             console.log('[App] Button press: Refresh');
             refreshWindows();
           }}
         />
         <Button
-          title="Close"
+          title='Close'
           onPress={() =>
             safeCall('closeWindow', () => NSWindowModule.closeWindow(firstId))
           }
         />
         <Button
-          title="Focus"
+          title='Focus'
           onPress={() =>
             safeCall('focusWindow', () => NSWindowModule.focusWindow(firstId))
           }
         />
         <Button
-          title="Hide"
+          title='Hide'
           onPress={() =>
             safeCall('hideWindow', () => NSWindowModule.hideWindow(firstId))
           }
         />
         <Button
-          title="Show"
+          title='Show'
           onPress={() =>
             safeCall('showWindow', () => NSWindowModule.showWindow(firstId))
           }
         />
         <Button
-          title="Minimize"
+          title='Minimize'
           onPress={() =>
             safeCall('minimizeWindow', () =>
-              NSWindowModule.minimizeWindow(firstId),
+              NSWindowModule.minimizeWindow(firstId)
             )
           }
         />
         <Button
-          title="Deminimize"
+          title='Deminimize'
           onPress={() =>
             safeCall('deminimizeWindow', () =>
-              NSWindowModule.deminimizeWindow(firstId),
+              NSWindowModule.deminimizeWindow(firstId)
             )
           }
         />
         <Button
-          title="FullScreen On"
+          title='FullScreen On'
           onPress={() =>
             safeCall('setFullScreen(true)', () =>
-              NSWindowModule.setFullScreen(firstId, true),
+              NSWindowModule.setFullScreen(firstId, true)
             )
           }
         />
         <Button
-          title="FullScreen Off"
+          title='FullScreen Off'
           onPress={() =>
             safeCall('setFullScreen(false)', () =>
-              NSWindowModule.setFullScreen(firstId, false),
+              NSWindowModule.setFullScreen(firstId, false)
             )
           }
         />
         <Button
-          title="Bring Front"
+          title='Bring Front'
           onPress={() =>
             safeCall('bringToFront', () => NSWindowModule.bringToFront(firstId))
           }
         />
         <Button
-          title="Send Back"
+          title='Send Back'
           onPress={() =>
             safeCall('sendToBack', () => NSWindowModule.sendToBack(firstId))
           }
@@ -390,42 +392,42 @@ function App() {
       <Text style={styles.section}>Modify First Window</Text>
       <View style={styles.row}>
         <Button
-          title="Resize 600x400"
+          title='Resize 600x400'
           onPress={() =>
             safeCall('modifyWindow(size)', () =>
-              NSWindowModule.modifyWindow(firstId, { width: 600, height: 400 }),
+              NSWindowModule.modifyWindow(firstId, { width: 600, height: 400 })
             )
           }
         />
         <Button
-          title="Move (100,100)"
+          title='Move (100,100)'
           onPress={() =>
             safeCall('modifyWindow(pos)', () =>
-              NSWindowModule.modifyWindow(firstId, { x: 100, y: 100 }),
+              NSWindowModule.modifyWindow(firstId, { x: 100, y: 100 })
             )
           }
         />
         <Button
-          title="Title: Modified"
+          title='Title: Modified'
           onPress={() =>
             safeCall('modifyWindow(title)', () =>
-              NSWindowModule.modifyWindow(firstId, { title: 'Modified!' }),
+              NSWindowModule.modifyWindow(firstId, { title: 'Modified!' })
             )
           }
         />
         <Button
-          title="Lock Resize"
+          title='Lock Resize'
           onPress={() =>
             safeCall('modifyWindow(noResize)', () =>
-              NSWindowModule.modifyWindow(firstId, { resizable: false }),
+              NSWindowModule.modifyWindow(firstId, { resizable: false })
             )
           }
         />
         <Button
-          title="Unlock Resize"
+          title='Unlock Resize'
           onPress={() =>
             safeCall('modifyWindow(resize)', () =>
-              NSWindowModule.modifyWindow(firstId, { resizable: true }),
+              NSWindowModule.modifyWindow(firstId, { resizable: true })
             )
           }
         />
@@ -433,7 +435,7 @@ function App() {
 
       <Text style={styles.section}>Get State</Text>
       <Button
-        title="Log State of First"
+        title='Log State of First'
         onPress={() =>
           safeCall('getWindowState', async () => {
             const state = await NSWindowModule.getWindowState(firstId);

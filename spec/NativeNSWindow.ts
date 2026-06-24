@@ -56,7 +56,7 @@ export interface ModifyableWindowProps {
 export interface WindowProps extends ModifyableWindowProps {
   componentName: string;
   windowName: string;
-  initialProps?: Object;
+  initialProps: Object;
 }
 export interface WindowState {
   windowId: string;
