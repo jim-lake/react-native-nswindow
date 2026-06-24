@@ -52,6 +52,8 @@ export interface ModifyableWindowProps {
   show?: boolean;
   focusOnCreate?: boolean;
   autoSaveFrame?: string;
+
+  stopShouldClose?: boolean;
 }
 export interface WindowProps extends ModifyableWindowProps {
   componentName: string;
@@ -102,10 +104,6 @@ export interface Spec extends TurboModule {
 
   bringToFront(windowId: string): Promise<void>;
   sendToBack(windowId: string): Promise<void>;
-
-  acknowledgeClose(windowId: string, shouldClose: boolean): void;
-  registerWillCloseHandler(windowId: string): void;
-  unregisterWillCloseHandler(windowId: string): void;
 
   readonly onWindowClose: EventEmitter<WindowId>;
   readonly onWindowWillClose: EventEmitter<WindowId>;
