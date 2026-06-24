@@ -75,25 +75,26 @@ export interface WindowState {
   isVisible: boolean;
 }
 
-export interface WindowIdPayload {
-  windowId: string;
-}
+export type WindowId = string;
+
 export interface WindowMovePayload extends WindowIdPayload {
+  windowId: string;
   x: number;
   y: number;
 }
 export interface WindowResizePayload extends WindowIdPayload {
+  windowId: string;
   width: number;
   height: number;
 }
 
 export interface Spec extends TurboModule {
-  addWindow(props: Object): Promise<string>;
+  addWindow(props: WindowProps): Promise<string>;
   closeWindow(windowId: string): Promise<void>;
-  modifyWindow(windowId: string, props: Object): Promise<void>;
+  modifyWindow(windowId: string, props: ModifyableWindowProps): Promise<void>;
 
   listWindows(): Promise<string[]>;
-  getWindowState(windowId: string): Promise<Object>;
+  getWindowState(windowId: string): Promise<WindowState>;
 
   focusWindow(windowId: string): Promise<void>;
   hideWindow(windowId: string): Promise<void>;
@@ -110,16 +111,16 @@ export interface Spec extends TurboModule {
   registerWillCloseHandler(windowId: string): void;
   unregisterWillCloseHandler(windowId: string): void;
 
-  readonly onWindowClose: EventEmitter<WindowIdPayload>;
-  readonly onWindowWillClose: EventEmitter<WindowIdPayload>;
+  readonly onWindowClose: EventEmitter<WindowId>;
+  readonly onWindowWillClose: EventEmitter<WindowId>;
   readonly onWindowMove: EventEmitter<WindowMovePayload>;
   readonly onWindowResize: EventEmitter<WindowResizePayload>;
-  readonly onWindowFocus: EventEmitter<WindowIdPayload>;
-  readonly onWindowBlur: EventEmitter<WindowIdPayload>;
-  readonly onWindowMinimize: EventEmitter<WindowIdPayload>;
-  readonly onWindowDeminimize: EventEmitter<WindowIdPayload>;
-  readonly onWindowEnterFullScreen: EventEmitter<WindowIdPayload>;
-  readonly onWindowExitFullScreen: EventEmitter<WindowIdPayload>;
+  readonly onWindowFocus: EventEmitter<WindowId>;
+  readonly onWindowBlur: EventEmitter<WindowId>;
+  readonly onWindowMinimize: EventEmitter<WindowId>;
+  readonly onWindowDeminimize: EventEmitter<WindowId>;
+  readonly onWindowEnterFullScreen: EventEmitter<WindowId>;
+  readonly onWindowExitFullScreen: EventEmitter<WindowId>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('NSWindowModule');
