@@ -240,6 +240,28 @@ function App() {
     }
   };
 
+  const openAutoSave = async () => {
+    console.log('[App] openAutoSave called');
+    try {
+      const id = await NSWindowModule.addWindow({
+        componentName: 'NotesWindow',
+        windowName: 'autosave-test',
+        initialProps: {},
+        title: 'AutoSave Frame',
+        width: 500,
+        height: 350,
+        autoSaveFrame: 'myAutoSaveWindow',
+        hasShadow: true,
+      });
+      console.log('[App] opened autosave window:', id);
+      appendLog(`opened autosave: ${id.slice(0, 8)}`);
+      refreshWindows();
+    } catch (e: any) {
+      console.error('[App] openAutoSave error:', e);
+      appendLog(`ERROR openAutoSave: ${e.message}`);
+    }
+  };
+
   const firstId = windows[windows.length - 1];
 
   const safeCall = async (name: string, fn: () => Promise<any>) => {
@@ -292,6 +314,13 @@ function App() {
           onPress={() => {
             console.log('[App] Button press: Hidden');
             openHidden();
+          }}
+        />
+        <Button
+          title='💾 AutoSave'
+          onPress={() => {
+            console.log('[App] Button press: AutoSave');
+            openAutoSave();
           }}
         />
       </View>
@@ -409,9 +438,6 @@ function App() {
           onPress={() => {
             const payload = { width: 600, height: 400 };
             console.log('[App] modifyWindow:', firstId, payload);
-            appendLog(
-              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
-            );
             safeCall('modifyWindow(size)', () =>
               NSWindowModule.modifyWindow(firstId, payload)
             );
@@ -422,76 +448,207 @@ function App() {
           onPress={() => {
             const payload = { x: 100, y: 100 };
             console.log('[App] modifyWindow:', firstId, payload);
-            appendLog(
-              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
-            );
             safeCall('modifyWindow(pos)', () =>
               NSWindowModule.modifyWindow(firstId, payload)
             );
           }}
         />
         <Button
+          title='Center'
+          onPress={() => {
+            safeCall('modifyWindow(center)', () =>
+              NSWindowModule.modifyWindow(firstId, { center: true })
+            );
+          }}
+        />
+        <Button
           title='Title: Modified'
           onPress={() => {
-            const payload = { title: 'Modified!' };
-            console.log('[App] modifyWindow:', firstId, payload);
-            appendLog(
-              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
-            );
             safeCall('modifyWindow(title)', () =>
-              NSWindowModule.modifyWindow(firstId, payload)
+              NSWindowModule.modifyWindow(firstId, { title: 'Modified!' })
             );
           }}
         />
         <Button
           title='Lock Resize'
           onPress={() => {
-            const payload = { resizable: false };
-            console.log('[App] modifyWindow:', firstId, payload);
-            appendLog(
-              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
-            );
             safeCall('modifyWindow(noResize)', () =>
-              NSWindowModule.modifyWindow(firstId, payload)
+              NSWindowModule.modifyWindow(firstId, { resizable: false })
             );
           }}
         />
         <Button
           title='Unlock Resize'
           onPress={() => {
-            const payload = { resizable: true };
-            console.log('[App] modifyWindow:', firstId, payload);
-            appendLog(
-              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
-            );
             safeCall('modifyWindow(resize)', () =>
-              NSWindowModule.modifyWindow(firstId, payload)
+              NSWindowModule.modifyWindow(firstId, { resizable: true })
             );
           }}
         />
         <Button
           title='Prevent Close'
           onPress={() => {
-            const payload = { stopShouldClose: true };
-            console.log('[App] modifyWindow:', firstId, payload);
-            appendLog(
-              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
-            );
             safeCall('modifyWindow(preventClose)', () =>
-              NSWindowModule.modifyWindow(firstId, payload)
+              NSWindowModule.modifyWindow(firstId, { stopShouldClose: true })
             );
           }}
         />
         <Button
-          title='Unprevent Close'
+          title='Allow Close'
           onPress={() => {
-            const payload = { stopShouldClose: false };
-            console.log('[App] modifyWindow:', firstId, payload);
-            appendLog(
-              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
+            safeCall('modifyWindow(allowClose)', () =>
+              NSWindowModule.modifyWindow(firstId, { stopShouldClose: false })
             );
-            safeCall('modifyWindow(unpreventClose)', () =>
-              NSWindowModule.modifyWindow(firstId, payload)
+          }}
+        />
+        <Button
+          title='TitleBar Hidden'
+          onPress={() => {
+            safeCall('modifyWindow(titleBarHidden)', () =>
+              NSWindowModule.modifyWindow(firstId, { titleBarStyle: 'hidden' })
+            );
+          }}
+        />
+        <Button
+          title='TitleBar Default'
+          onPress={() => {
+            safeCall('modifyWindow(titleBarDefault)', () =>
+              NSWindowModule.modifyWindow(firstId, { titleBarStyle: 'default' })
+            );
+          }}
+        />
+        <Button
+          title='Vibrancy Sidebar'
+          onPress={() => {
+            safeCall('modifyWindow(vibrancySidebar)', () =>
+              NSWindowModule.modifyWindow(firstId, { vibrancy: 'sidebar' })
+            );
+          }}
+        />
+        <Button
+          title='Vibrancy None'
+          onPress={() => {
+            safeCall('modifyWindow(vibrancyNone)', () =>
+              NSWindowModule.modifyWindow(firstId, { vibrancy: 'none' })
+            );
+          }}
+        />
+        <Button
+          title='BG Red'
+          onPress={() => {
+            safeCall('modifyWindow(bgRed)', () =>
+              NSWindowModule.modifyWindow(firstId, {
+                backgroundColor: '#ff0000',
+              })
+            );
+          }}
+        />
+        <Button
+          title='BG Blue'
+          onPress={() => {
+            safeCall('modifyWindow(bgBlue)', () =>
+              NSWindowModule.modifyWindow(firstId, {
+                backgroundColor: '#0000ff',
+              })
+            );
+          }}
+        />
+        <Button
+          title='Shadow Off'
+          onPress={() => {
+            safeCall('modifyWindow(noShadow)', () =>
+              NSWindowModule.modifyWindow(firstId, { hasShadow: false })
+            );
+          }}
+        />
+        <Button
+          title='Shadow On'
+          onPress={() => {
+            safeCall('modifyWindow(shadow)', () =>
+              NSWindowModule.modifyWindow(firstId, { hasShadow: true })
+            );
+          }}
+        />
+        <Button
+          title='No Minimize'
+          onPress={() => {
+            safeCall('modifyWindow(noMin)', () =>
+              NSWindowModule.modifyWindow(firstId, { minimizable: false })
+            );
+          }}
+        />
+        <Button
+          title='Minimizable'
+          onPress={() => {
+            safeCall('modifyWindow(min)', () =>
+              NSWindowModule.modifyWindow(firstId, { minimizable: true })
+            );
+          }}
+        />
+        <Button
+          title='No Close Btn'
+          onPress={() => {
+            safeCall('modifyWindow(noCloseBtn)', () =>
+              NSWindowModule.modifyWindow(firstId, { closable: false })
+            );
+          }}
+        />
+        <Button
+          title='Closable'
+          onPress={() => {
+            safeCall('modifyWindow(closeBtn)', () =>
+              NSWindowModule.modifyWindow(firstId, { closable: true })
+            );
+          }}
+        />
+        <Button
+          title='No Zoom'
+          onPress={() => {
+            safeCall('modifyWindow(noZoom)', () =>
+              NSWindowModule.modifyWindow(firstId, { zoomable: false })
+            );
+          }}
+        />
+        <Button
+          title='Zoomable'
+          onPress={() => {
+            safeCall('modifyWindow(zoom)', () =>
+              NSWindowModule.modifyWindow(firstId, { zoomable: true })
+            );
+          }}
+        />
+        <Button
+          title='Lock Move'
+          onPress={() => {
+            safeCall('modifyWindow(noMove)', () =>
+              NSWindowModule.modifyWindow(firstId, { movable: false })
+            );
+          }}
+        />
+        <Button
+          title='Unlock Move'
+          onPress={() => {
+            safeCall('modifyWindow(move)', () =>
+              NSWindowModule.modifyWindow(firstId, { movable: true })
+            );
+          }}
+        />
+        <Button
+          title='Always On Top'
+          onPress={() => {
+            safeCall('modifyWindow(onTop)', () =>
+              NSWindowModule.modifyWindow(firstId, { alwaysOnTop: true })
+            );
+          }}
+        />
+        <Button
+          title='Normal Level'
+          onPress={() => {
+            safeCall('modifyWindow(normalLevel)', () =>
+              NSWindowModule.modifyWindow(firstId, {
+                alwaysOnTop: false,
+                level: 'normal',
+              })
             );
           }}
         />
