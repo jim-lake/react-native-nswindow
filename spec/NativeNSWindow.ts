@@ -2,7 +2,11 @@ import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 import type { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
 
-export type TitleBarStyle = 'default' | 'hidden' | 'hiddenInset' | 'transparent';
+export type TitleBarStyle =
+  | 'default'
+  | 'hidden'
+  | 'hiddenInset'
+  | 'transparent';
 
 export type WindowLevel =
   | 'normal'
@@ -29,7 +33,14 @@ export interface WindowProps {
 
   title?: string;
   titleBarStyle?: TitleBarStyle;
-  vibrancy?: 'none' | 'sidebar' | 'menu' | 'popover' | 'fullScreenUI' | 'underWindowBackground' | 'hudWindow';
+  vibrancy?:
+    | 'none'
+    | 'sidebar'
+    | 'menu'
+    | 'popover'
+    | 'fullScreenUI'
+    | 'underWindowBackground'
+    | 'hudWindow';
   backgroundColor?: string;
   transparent?: boolean;
   hasShadow?: boolean;
@@ -64,9 +75,17 @@ export interface WindowState {
   isVisible: boolean;
 }
 
-export interface WindowIdPayload { windowId: string }
-export interface WindowMovePayload extends WindowIdPayload { x: number; y: number }
-export interface WindowResizePayload extends WindowIdPayload { width: number; height: number }
+export interface WindowIdPayload {
+  windowId: string;
+}
+export interface WindowMovePayload extends WindowIdPayload {
+  x: number;
+  y: number;
+}
+export interface WindowResizePayload extends WindowIdPayload {
+  width: number;
+  height: number;
+}
 
 export interface Spec extends TurboModule {
   addWindow(props: Object): Promise<string>;

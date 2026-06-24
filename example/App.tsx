@@ -1,0 +1,507 @@
+import React, { useState, useEffect } from 'react';
+import {
+  AppRegistry,
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+} from 'react-native';
+import NSWindowModule from 'react-native-nswindow';
+import type {
+  WindowIdPayload,
+  WindowMovePayload,
+  WindowResizePayload,
+} from 'react-native-nswindow';
+
+console.log('[NSWindowExample] App.tsx loading...');
+console.log('[NSWindowExample] NSWindowModule:', NSWindowModule);
+console.log(
+  '[NSWindowExample] NSWindowModule keys:',
+  Object.getOwnPropertyNames(NSWindowModule),
+);
+
+// ─── Secondary window components ───
+
+function NotesWindow() {
+  console.log('[NotesWindow] Rendering');
+  const [text, setText] = useState('');
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>📝 Notes</Text>
+      <TextInput
+        style={styles.textInput}
+        multiline
+        value={text}
+        onChangeText={v => {
+          console.log('[NotesWindow] onChangeText:', v.length, 'chars');
+          setText(v);
+        }}
+        placeholder="Type notes here..."
+      />
+    </View>
+  );
+}
+
+function ColorWindow({ color = '#ff6b6b' }: { color?: string }) {
+  console.log('[ColorWindow] Rendering with color:', color);
+  return (
+    <View style={[styles.container, { backgroundColor: color }]}>
+      <Text style={styles.title}>🎨 Color Window</Text>
+      <Text style={styles.subtitle}>Background: {color}</Text>
+    </View>
+  );
+}
+
+function MiniWindow() {
+  console.log('[MiniWindow] Rendering');
+  return (
+    <View style={[styles.container, { backgroundColor: '#2d3436' }]}>
+      <Text style={[styles.title, { color: '#fff' }]}>🔲 Mini</Text>
+    </View>
+  );
+}
+
+// ─── Main window ───
+
+function App() {
+  console.log('[App] Rendering main window');
+  const [log, setLog] = useState<string[]>([]);
+  const [windows, setWindows] = useState<string[]>([]);
+
+  const appendLog = (msg: string) => {
+    console.log('[App Event]', msg);
+    setLog(prev =>
+      [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 50),
+    );
+  };
+
+  useEffect(() => {
+    console.log('[App] useEffect - setting up event listeners');
+    const subs = [
+      NSWindowModule.onWindowClose((p: WindowIdPayload) => {
+        console.log('[App] onWindowClose:', p);
+        appendLog(`close: ${p.windowId.slice(0, 8)}`);
+      }),
+      NSWindowModule.onWindowWillClose((p: WindowIdPayload) => {
+        console.log('[App] onWindowWillClose:', p);
+        appendLog(`willClose: ${p.windowId.slice(0, 8)}`);
+      }),
+      NSWindowModule.onWindowFocus((p: WindowIdPayload) => {
+        console.log('[App] onWindowFocus:', p);
+        appendLog(`focus: ${p.windowId.slice(0, 8)}`);
+      }),
+      NSWindowModule.onWindowBlur((p: WindowIdPayload) => {
+        console.log('[App] onWindowBlur:', p);
+        appendLog(`blur: ${p.windowId.slice(0, 8)}`);
+      }),
+      NSWindowModule.onWindowMove((p: WindowMovePayload) => {
+        console.log('[App] onWindowMove:', p);
+        appendLog(
+          `move: ${p.windowId.slice(0, 8)} → (${Math.round(p.x)},${Math.round(p.y)})`,
+        );
+      }),
+      NSWindowModule.onWindowResize((p: WindowResizePayload) => {
+        console.log('[App] onWindowResize:', p);
+        appendLog(
+          `resize: ${p.windowId.slice(0, 8)} → ${Math.round(p.width)}x${Math.round(p.height)}`,
+        );
+      }),
+      NSWindowModule.onWindowMinimize((p: WindowIdPayload) => {
+        console.log('[App] onWindowMinimize:', p);
+        appendLog(`minimize: ${p.windowId.slice(0, 8)}`);
+      }),
+      NSWindowModule.onWindowDeminimize((p: WindowIdPayload) => {
+        console.log('[App] onWindowDeminimize:', p);
+        appendLog(`deminimize: ${p.windowId.slice(0, 8)}`);
+      }),
+      NSWindowModule.onWindowEnterFullScreen((p: WindowIdPayload) => {
+        console.log('[App] onWindowEnterFullScreen:', p);
+        appendLog(`enterFS: ${p.windowId.slice(0, 8)}`);
+      }),
+      NSWindowModule.onWindowExitFullScreen((p: WindowIdPayload) => {
+        console.log('[App] onWindowExitFullScreen:', p);
+        appendLog(`exitFS: ${p.windowId.slice(0, 8)}`);
+      }),
+    ];
+    console.log('[App] Event listeners registered:', subs.length);
+    return () => {
+      console.log('[App] Cleaning up event listeners');
+      subs.forEach(s => s.remove());
+    };
+  }, []);
+
+  // Handle willClose by always acknowledging (allow close)
+  useEffect(() => {
+    console.log('[App] useEffect - setting up willClose acknowledger');
+    const sub = NSWindowModule.onWindowWillClose((p: WindowIdPayload) => {
+      console.log(
+        '[App] willClose acknowledger - acknowledging close for:',
+        p.windowId,
+      );
+      NSWindowModule.acknowledgeClose(p.windowId, true);
+    });
+    return () => {
+      console.log('[App] Cleaning up willClose acknowledger');
+      sub.remove();
+    };
+  }, []);
+
+  const refreshWindows = async () => {
+    console.log('[App] refreshWindows called');
+    try {
+      const ids = await NSWindowModule.listWindows();
+      console.log('[App] refreshWindows result:', ids);
+      setWindows(ids);
+      appendLog(`listWindows: ${ids.length} open`);
+    } catch (e: any) {
+      console.error('[App] refreshWindows error:', e);
+      appendLog(`ERROR listWindows: ${e.message}`);
+    }
+  };
+
+  const openNotes = async () => {
+    console.log('[App] openNotes called');
+    try {
+      const id = await NSWindowModule.addWindow({
+        componentName: 'NotesWindow',
+        windowName: 'notes',
+        title: 'Notes',
+        width: 400,
+        height: 300,
+      });
+      console.log('[App] opened notes window:', id);
+      appendLog(`opened notes: ${id.slice(0, 8)}`);
+      console.log('[App] registering willClose handler for:', id);
+      NSWindowModule.registerWillCloseHandler(id);
+      refreshWindows();
+    } catch (e: any) {
+      console.error('[App] openNotes error:', e);
+      appendLog(`ERROR openNotes: ${e.message}`);
+    }
+  };
+
+  const openColor = async () => {
+    console.log('[App] openColor called');
+    try {
+      const colors = ['#ff6b6b', '#a29bfe', '#00cec9', '#fdcb6e', '#6c5ce7'];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      console.log('[App] opening color window with color:', color);
+      const id = await NSWindowModule.addWindow({
+        componentName: 'ColorWindow',
+        windowName: 'color',
+        title: `Color: ${color}`,
+        width: 300,
+        height: 200,
+        initialProps: { color },
+        titleBarStyle: 'hiddenInset',
+        vibrancy: 'popover',
+      });
+      console.log('[App] opened color window:', id, 'color:', color);
+      appendLog(`opened color(${color}): ${id.slice(0, 8)}`);
+      refreshWindows();
+    } catch (e: any) {
+      console.error('[App] openColor error:', e);
+      appendLog(`ERROR openColor: ${e.message}`);
+    }
+  };
+
+  const openMini = async () => {
+    console.log('[App] openMini called');
+    try {
+      const id = await NSWindowModule.addWindow({
+        componentName: 'MiniWindow',
+        windowName: 'mini',
+        title: 'Mini',
+        width: 150,
+        height: 100,
+        minWidth: 100,
+        minHeight: 80,
+        maxWidth: 300,
+        maxHeight: 200,
+        resizable: true,
+        alwaysOnTop: true,
+      });
+      console.log('[App] opened mini window:', id);
+      appendLog(`opened mini: ${id.slice(0, 8)}`);
+      refreshWindows();
+    } catch (e: any) {
+      console.error('[App] openMini error:', e);
+      appendLog(`ERROR openMini: ${e.message}`);
+    }
+  };
+
+  const openHidden = async () => {
+    console.log('[App] openHidden called');
+    try {
+      const id = await NSWindowModule.addWindow({
+        componentName: 'NotesWindow',
+        windowName: 'hidden-test',
+        title: 'Hidden Window',
+        show: false,
+        width: 400,
+        height: 300,
+      });
+      console.log('[App] created hidden window:', id);
+      appendLog(`created hidden: ${id.slice(0, 8)} — use Show to reveal`);
+      refreshWindows();
+    } catch (e: any) {
+      console.error('[App] openHidden error:', e);
+      appendLog(`ERROR openHidden: ${e.message}`);
+    }
+  };
+
+  const firstId = windows[0];
+
+  const safeCall = async (name: string, fn: () => Promise<any>) => {
+    console.log(`[App] safeCall: ${name}, windowId:`, firstId);
+    try {
+      const result = await fn();
+      console.log(`[App] ${name} result:`, result);
+      appendLog(`${name}: success`);
+      return result;
+    } catch (e: any) {
+      console.error(`[App] ${name} error:`, e);
+      appendLog(`ERROR ${name}: ${e.message}`);
+    }
+  };
+
+  return (
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <Text style={styles.header}>NSWindow Example</Text>
+
+      <Text style={styles.section}>Create Windows</Text>
+      <View style={styles.row}>
+        <Button
+          title="📝 Notes"
+          onPress={() => {
+            console.log('[App] Button press: Notes');
+            openNotes();
+          }}
+        />
+        <Button
+          title="🎨 Color"
+          onPress={() => {
+            console.log('[App] Button press: Color');
+            openColor();
+          }}
+        />
+        <Button
+          title="🔲 Mini (On Top)"
+          onPress={() => {
+            console.log('[App] Button press: Mini');
+            openMini();
+          }}
+        />
+        <Button
+          title="👻 Hidden"
+          onPress={() => {
+            console.log('[App] Button press: Hidden');
+            openHidden();
+          }}
+        />
+      </View>
+
+      <Text style={styles.section}>
+        Window Actions {firstId ? `(on ${firstId.slice(0, 8)})` : '(none open)'}
+      </Text>
+      <View style={styles.row}>
+        <Button
+          title="Refresh List"
+          onPress={() => {
+            console.log('[App] Button press: Refresh');
+            refreshWindows();
+          }}
+        />
+        <Button
+          title="Close"
+          onPress={() =>
+            safeCall('closeWindow', () => NSWindowModule.closeWindow(firstId))
+          }
+        />
+        <Button
+          title="Focus"
+          onPress={() =>
+            safeCall('focusWindow', () => NSWindowModule.focusWindow(firstId))
+          }
+        />
+        <Button
+          title="Hide"
+          onPress={() =>
+            safeCall('hideWindow', () => NSWindowModule.hideWindow(firstId))
+          }
+        />
+        <Button
+          title="Show"
+          onPress={() =>
+            safeCall('showWindow', () => NSWindowModule.showWindow(firstId))
+          }
+        />
+        <Button
+          title="Minimize"
+          onPress={() =>
+            safeCall('minimizeWindow', () =>
+              NSWindowModule.minimizeWindow(firstId),
+            )
+          }
+        />
+        <Button
+          title="Deminimize"
+          onPress={() =>
+            safeCall('deminimizeWindow', () =>
+              NSWindowModule.deminimizeWindow(firstId),
+            )
+          }
+        />
+        <Button
+          title="FullScreen On"
+          onPress={() =>
+            safeCall('setFullScreen(true)', () =>
+              NSWindowModule.setFullScreen(firstId, true),
+            )
+          }
+        />
+        <Button
+          title="FullScreen Off"
+          onPress={() =>
+            safeCall('setFullScreen(false)', () =>
+              NSWindowModule.setFullScreen(firstId, false),
+            )
+          }
+        />
+        <Button
+          title="Bring Front"
+          onPress={() =>
+            safeCall('bringToFront', () => NSWindowModule.bringToFront(firstId))
+          }
+        />
+        <Button
+          title="Send Back"
+          onPress={() =>
+            safeCall('sendToBack', () => NSWindowModule.sendToBack(firstId))
+          }
+        />
+      </View>
+
+      <Text style={styles.section}>Modify First Window</Text>
+      <View style={styles.row}>
+        <Button
+          title="Resize 600x400"
+          onPress={() =>
+            safeCall('modifyWindow(size)', () =>
+              NSWindowModule.modifyWindow(firstId, { width: 600, height: 400 }),
+            )
+          }
+        />
+        <Button
+          title="Move (100,100)"
+          onPress={() =>
+            safeCall('modifyWindow(pos)', () =>
+              NSWindowModule.modifyWindow(firstId, { x: 100, y: 100 }),
+            )
+          }
+        />
+        <Button
+          title="Title: Modified"
+          onPress={() =>
+            safeCall('modifyWindow(title)', () =>
+              NSWindowModule.modifyWindow(firstId, { title: 'Modified!' }),
+            )
+          }
+        />
+        <Button
+          title="Lock Resize"
+          onPress={() =>
+            safeCall('modifyWindow(noResize)', () =>
+              NSWindowModule.modifyWindow(firstId, { resizable: false }),
+            )
+          }
+        />
+        <Button
+          title="Unlock Resize"
+          onPress={() =>
+            safeCall('modifyWindow(resize)', () =>
+              NSWindowModule.modifyWindow(firstId, { resizable: true }),
+            )
+          }
+        />
+      </View>
+
+      <Text style={styles.section}>Get State</Text>
+      <Button
+        title="Log State of First"
+        onPress={() =>
+          safeCall('getWindowState', async () => {
+            const state = await NSWindowModule.getWindowState(firstId);
+            console.log('[App] Window state:', JSON.stringify(state, null, 2));
+            appendLog(`state: ${JSON.stringify(state)}`);
+            return state;
+          })
+        }
+      />
+
+      <Text style={styles.section}>Event Log</Text>
+      <View style={styles.logBox}>
+        {log.map((entry, i) => (
+          <Text key={i} style={styles.logEntry}>
+            {entry}
+          </Text>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: { flex: 1, backgroundColor: '#f5f5f5' },
+  scrollContent: { padding: 20 },
+  header: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
+  section: { fontSize: 16, fontWeight: '600', marginTop: 16, marginBottom: 8 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: { fontSize: 20, fontWeight: 'bold' },
+  subtitle: { fontSize: 14, marginTop: 8, opacity: 0.7 },
+  textInput: {
+    flex: 1,
+    width: '100%',
+    marginTop: 12,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 6,
+    fontSize: 14,
+    textAlignVertical: 'top',
+  },
+  logBox: {
+    marginTop: 8,
+    padding: 10,
+    backgroundColor: '#1e1e1e',
+    borderRadius: 6,
+    maxHeight: 200,
+  },
+  logEntry: {
+    fontSize: 11,
+    fontFamily: 'Menlo',
+    color: '#0f0',
+    marginBottom: 2,
+  },
+});
+
+// ─── Register secondary window components ───
+
+console.log('[NSWindowExample] Registering secondary components');
+AppRegistry.registerComponent('NotesWindow', () => NotesWindow);
+AppRegistry.registerComponent('ColorWindow', () => ColorWindow);
+AppRegistry.registerComponent('MiniWindow', () => MiniWindow);
+console.log('[NSWindowExample] All components registered');
+
+export default App;
