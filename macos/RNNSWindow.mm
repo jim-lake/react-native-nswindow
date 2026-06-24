@@ -143,7 +143,9 @@
 - (void)notificationWindowDidResignKey:(NSNotification *)notification {
   NSWindow *window = notification.object;
   NSString *windowId = [self windowIdForWindow:window];
-  if (!windowId) return;
+  if (!windowId) {
+    return;
+  }
   if (self.module) {
     self.module->emitOnWindowBlur(std::string([windowId UTF8String]));
   }
@@ -152,7 +154,9 @@
 - (void)notificationWindowDidMove:(NSNotification *)notification {
   NSWindow *window = notification.object;
   NSString *windowId = [self windowIdForWindow:window];
-  if (!windowId) return;
+  if (!windowId) {
+    return;
+  }
   if (self.module) {
     NSRect frame = window.frame;
     facebook::react::WindowMovePayload payload{
@@ -475,6 +479,14 @@ RNNSWindow::RNNSWindow(std::shared_ptr<CallInvoker> jsInvoker)
     : NativeNSWindowCxxSpec(std::move(jsInvoker)) {
   dispatch_async(dispatch_get_main_queue(), ^{
     [RNNSWindowHelper shared].module = this;
+  });
+}
+
+RNNSWindow::~RNNSWindow() {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if ([RNNSWindowHelper shared].module == this) {
+      [RNNSWindowHelper shared].module = nullptr;
+    }
   });
 }
 

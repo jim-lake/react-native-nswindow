@@ -80,6 +80,7 @@ namespace facebook::react {
 class RNNSWindow : public NativeNSWindowCxxSpec<RNNSWindow> {
 public:
   RNNSWindow(std::shared_ptr<CallInvoker> jsInvoker);
+  ~RNNSWindow();
 
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowClose;
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowWillClose;
