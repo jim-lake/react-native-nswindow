@@ -1,0 +1,10 @@
+node_modules
+package-lock.json
+android
+ios
+macos/Pods
+macos/NSWindowExample.xcodeproj
+macos/NSWindowExample.xcworkspace
+macos/Podfile.lock
+.bundle
+*.md

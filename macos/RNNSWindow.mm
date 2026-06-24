@@ -62,13 +62,57 @@
     _windows = [NSMutableDictionary new];
     _windowNames = [NSMutableDictionary new];
 
-    [[NSNotificationCenter defaultCenter]
-        addObserver:self
+    NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+    [nc addObserver:self
            selector:@selector(notificationWindowWillClose:)
                name:NSWindowWillCloseNotification
              object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidBecomeKey:)
+               name:NSWindowDidBecomeKeyNotification
+             object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidResignKey:)
+               name:NSWindowDidResignKeyNotification
+             object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidMove:)
+               name:NSWindowDidMoveNotification
+             object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidResize:)
+               name:NSWindowDidResizeNotification
+             object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidMiniaturize:)
+               name:NSWindowDidMiniaturizeNotification
+             object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidDeminiaturize:)
+               name:NSWindowDidDeminiaturizeNotification
+             object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidEnterFullScreen:)
+               name:NSWindowDidEnterFullScreenNotification
+             object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidExitFullScreen:)
+               name:NSWindowDidExitFullScreenNotification
+             object:nil];
   }
   return self;
+}
+
+- (NSString *)windowIdForWindow:(NSWindow *)window {
+  for (NSString *key in _windows) {
+    if (_windows[key] == window) {
+      return key;
+    }
+  }
+  NSString *windowId = [[NSUUID UUID] UUIDString];
+  _windows[windowId] = window;
+  _windowNames[windowId] = @"external";
+  return windowId;
 }
 
 - (void)notificationWindowWillClose:(NSNotification *)notification {
@@ -76,21 +120,83 @@
   if (!window) {
     return;
   }
-  NSString *windowId = nil;
-  for (NSString *key in _windows) {
-    if (_windows[key] == window) {
-      windowId = key;
-      break;
-    }
-  }
-  if (!windowId) {
-    windowId = [[NSUUID UUID] UUIDString];
-  } else {
-    [_windows removeObjectForKey:windowId];
-    [_windowNames removeObjectForKey:windowId];
-  }
+  NSString *windowId = [self windowIdForWindow:window];
+  [_windows removeObjectForKey:windowId];
+  [_windowNames removeObjectForKey:windowId];
   if (self.module) {
     self.module->emitOnWindowClose(std::string([windowId UTF8String]));
+  }
+}
+
+- (void)notificationWindowDidBecomeKey:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    self.module->emitOnWindowFocus(std::string([windowId UTF8String]));
+  }
+}
+
+- (void)notificationWindowDidResignKey:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    self.module->emitOnWindowBlur(std::string([windowId UTF8String]));
+  }
+}
+
+- (void)notificationWindowDidMove:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    NSRect frame = window.frame;
+    facebook::react::WindowMovePayload payload{
+        std::string([windowId UTF8String]), frame.origin.x, frame.origin.y};
+    self.module->emitOnWindowMove(payload);
+  }
+}
+
+- (void)notificationWindowDidResize:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    NSRect frame = window.frame;
+    facebook::react::WindowResizePayload payload{
+        std::string([windowId UTF8String]), frame.size.width,
+        frame.size.height};
+    self.module->emitOnWindowResize(payload);
+  }
+}
+
+- (void)notificationWindowDidMiniaturize:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    self.module->emitOnWindowMinimize(std::string([windowId UTF8String]));
+  }
+}
+
+- (void)notificationWindowDidDeminiaturize:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    self.module->emitOnWindowDeminimize(std::string([windowId UTF8String]));
+  }
+}
+
+- (void)notificationWindowDidEnterFullScreen:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    self.module->emitOnWindowEnterFullScreen(
+        std::string([windowId UTF8String]));
+  }
+}
+
+- (void)notificationWindowDidExitFullScreen:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    self.module->emitOnWindowExitFullScreen(std::string([windowId UTF8String]));
   }
 }
 
@@ -333,20 +439,6 @@
 }
 
 #pragma mark - NSWindowDelegate
-
-- (void)windowWillClose:(NSNotification *)notification {
-  NSWindow *window = notification.object;
-  NSString *windowId = nil;
-  for (NSString *key in _windows) {
-    if (_windows[key] == window) {
-      windowId = key;
-      break;
-    }
-  }
-  if (windowId) {
-    [self removeWindowForId:windowId];
-  }
-}
 
 @end
 

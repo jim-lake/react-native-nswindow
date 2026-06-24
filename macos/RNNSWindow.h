@@ -38,11 +38,59 @@ using WindowStateResult =
     NativeNSWindowWindowState<std::string, std::string, double, double, double,
                               double, bool, bool, bool, bool>;
 
+} // namespace facebook::react
+
+// bridging support for event payload structs
+namespace facebook::react {
+
+template <> struct Bridging<WindowMovePayload> {
+  static WindowMovePayload
+  fromJs(jsi::Runtime &rt, const jsi::Object &value,
+         const std::shared_ptr<CallInvoker> &jsInvoker) {
+    return NativeNSWindowWindowMovePayloadBridging<WindowMovePayload>::fromJs(
+        rt, value, jsInvoker);
+  }
+
+  static jsi::Object toJs(jsi::Runtime &rt, const WindowMovePayload &value,
+                          const std::shared_ptr<CallInvoker> &jsInvoker) {
+    return NativeNSWindowWindowMovePayloadBridging<WindowMovePayload>::toJs(
+        rt, value, jsInvoker);
+  }
+};
+
+template <> struct Bridging<WindowResizePayload> {
+  static WindowResizePayload
+  fromJs(jsi::Runtime &rt, const jsi::Object &value,
+         const std::shared_ptr<CallInvoker> &jsInvoker) {
+    return NativeNSWindowWindowResizePayloadBridging<
+        WindowResizePayload>::fromJs(rt, value, jsInvoker);
+  }
+
+  static jsi::Object toJs(jsi::Runtime &rt, const WindowResizePayload &value,
+                          const std::shared_ptr<CallInvoker> &jsInvoker) {
+    return NativeNSWindowWindowResizePayloadBridging<WindowResizePayload>::toJs(
+        rt, value, jsInvoker);
+  }
+};
+
+} // namespace facebook::react
+
+namespace facebook::react {
+
 class RNNSWindow : public NativeNSWindowCxxSpec<RNNSWindow> {
 public:
   RNNSWindow(std::shared_ptr<CallInvoker> jsInvoker);
 
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowClose;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowWillClose;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowMove;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowResize;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowFocus;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowBlur;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowMinimize;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowDeminimize;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowEnterFullScreen;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowExitFullScreen;
 
   jsi::Value addWindow(jsi::Runtime &rt, jsi::Object props);
   jsi::Value closeWindow(jsi::Runtime &rt, jsi::String windowId);

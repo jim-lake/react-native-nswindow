@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
   s.version      = package["version"]
   s.summary      = package["description"]
   s.license      = package["license"]
-  s.authors      = { "author" => "author@example.com" }
+  s.authors      = { "author" => "jim@blueskylabs.com" }
   s.homepage     = "https://github.com/example/react-native-nswindow"
   s.source       = { :git => "https://github.com/example/react-native-nswindow.git", :tag => s.version }
 

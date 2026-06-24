@@ -8,9 +8,7 @@ const config = {
   resolver: {
     nodeModulesPaths: [path.resolve(__dirname, 'node_modules')],
     // Ensure the library's source is resolved from the parent dir
-    extraNodeModules: {
-      'react-native-nswindow': libraryRoot,
-    },
+    extraNodeModules: { 'react-native-nswindow': libraryRoot },
   },
 };
 

@@ -9,8 +9,8 @@
     "start": "react-native start",
     "test": "jest",
     "pretty": "prettier --write . && clang-format -i macos/NSWindowExample-macOS/*.{h,m,mm}",
-    "build:macos": "react-native build-macos",
-    "run:macos": "react-native run-macos"
+    "build:macos": "react-native build-macos --mode Debug",
+    "run:macos": "react-native run-macos --mode Debug"
   },
   "dependencies": {
     "react": "19.1.4",
