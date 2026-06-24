@@ -15,8 +15,8 @@ using WindowProps = NativeNSWindowWindowProps<
     std::optional<bool>, std::optional<bool>, std::optional<bool>,
     std::optional<bool>, std::optional<bool>, std::optional<bool>,
     std::optional<bool>, std::optional<std::string>, std::optional<bool>,
-    std::optional<bool>, std::optional<std::string>, std::string, std::string,
-    jsi::Object>;
+    std::optional<bool>, std::optional<std::string>, std::optional<bool>,
+    std::string, std::string, jsi::Object>;
 
 using ModifyProps = NativeNSWindowModifyableWindowProps<
     std::optional<double>, std::optional<double>, std::optional<double>,
@@ -27,7 +27,7 @@ using ModifyProps = NativeNSWindowModifyableWindowProps<
     std::optional<bool>, std::optional<bool>, std::optional<bool>,
     std::optional<bool>, std::optional<bool>, std::optional<bool>,
     std::optional<bool>, std::optional<std::string>, std::optional<bool>,
-    std::optional<bool>, std::optional<std::string>>;
+    std::optional<bool>, std::optional<std::string>, std::optional<bool>>;
 
 // Concrete types for events
 using WindowMovePayload =
@@ -111,11 +111,6 @@ public:
 
   jsi::Value bringToFront(jsi::Runtime &rt, jsi::String windowId);
   jsi::Value sendToBack(jsi::Runtime &rt, jsi::String windowId);
-
-  void acknowledgeClose(jsi::Runtime &rt, jsi::String windowId,
-                        bool shouldClose);
-  void registerWillCloseHandler(jsi::Runtime &rt, jsi::String windowId);
-  void unregisterWillCloseHandler(jsi::Runtime &rt, jsi::String windowId);
 };
 
 } // namespace facebook::react

@@ -40,11 +40,13 @@
 - (NSArray<NSString *> *)allWindowIds;
 - (NSString *_Nullable)windowNameForId:(NSString *)windowId;
 - (void)removeWindowForId:(NSString *)windowId;
+- (void)setStopShouldClose:(BOOL)stop forWindowId:(NSString *)windowId;
 @end
 
 @implementation RNNSWindowHelper {
   NSMutableDictionary<NSString *, NSWindow *> *_windows;
   NSMutableDictionary<NSString *, NSString *> *_windowNames;
+  NSMutableSet<NSString *> *_preventCloseWindows;
 }
 
 + (instancetype)shared {
@@ -61,6 +63,7 @@
   if (self) {
     _windows = [NSMutableDictionary new];
     _windowNames = [NSMutableDictionary new];
+    _preventCloseWindows = [NSMutableSet new];
 
     NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
     [nc addObserver:self
@@ -121,6 +124,7 @@
     return;
   }
   NSString *windowId = [self windowIdForWindow:window];
+  [_preventCloseWindows removeObject:windowId];
   [_windows removeObjectForKey:windowId];
   [_windowNames removeObjectForKey:windowId];
   if (self.module) {
@@ -139,6 +143,7 @@
 - (void)notificationWindowDidResignKey:(NSNotification *)notification {
   NSWindow *window = notification.object;
   NSString *windowId = [self windowIdForWindow:window];
+  if (!windowId) return;
   if (self.module) {
     self.module->emitOnWindowBlur(std::string([windowId UTF8String]));
   }
@@ -147,6 +152,7 @@
 - (void)notificationWindowDidMove:(NSNotification *)notification {
   NSWindow *window = notification.object;
   NSString *windowId = [self windowIdForWindow:window];
+  if (!windowId) return;
   if (self.module) {
     NSRect frame = window.frame;
     facebook::react::WindowMovePayload payload{
@@ -440,6 +446,25 @@
 
 #pragma mark - NSWindowDelegate
 
+- (BOOL)windowShouldClose:(NSWindow *)sender {
+  NSString *windowId = [self windowIdForWindow:sender];
+  if (self.module) {
+    self.module->emitOnWindowWillClose(std::string([windowId UTF8String]));
+  }
+  if ([_preventCloseWindows containsObject:windowId]) {
+    return NO;
+  }
+  return YES;
+}
+
+- (void)setStopShouldClose:(BOOL)stop forWindowId:(NSString *)windowId {
+  if (stop) {
+    [_preventCloseWindows addObject:windowId];
+  } else {
+    [_preventCloseWindows removeObject:windowId];
+  }
+}
+
 @end
 
 // ─── C++ Implementation ───
@@ -516,6 +541,7 @@ jsi::Value RNNSWindow::addWindow(jsi::Runtime &rt, jsi::Object props) {
   BOOL show = p.show.value_or(true);
   BOOL focusOnCreate = p.focusOnCreate.value_or(true);
   NSString *autoSaveFrame = toNSString(p.autoSaveFrame);
+  BOOL stopShouldClose = p.stopShouldClose.value_or(false);
 
   return createPromiseAsJSIValue(
       rt, [=, this](jsi::Runtime &, std::shared_ptr<Promise> promise) {
@@ -549,6 +575,11 @@ jsi::Value RNNSWindow::addWindow(jsi::Runtime &rt, jsi::Object props) {
                                    show:show
                           focusOnCreate:focusOnCreate
                           autoSaveFrame:autoSaveFrame];
+
+          if (stopShouldClose) {
+            [[RNNSWindowHelper shared] setStopShouldClose:YES
+                                              forWindowId:windowId];
+          }
 
           std::string wid = [windowId UTF8String];
           jsInvoker_->invokeAsync([promise, wid](jsi::Runtime &rt3) {
@@ -596,6 +627,7 @@ jsi::Value RNNSWindow::modifyWindow(jsi::Runtime &rt, jsi::String windowId,
   NSString *level = toNSString(p.level);
   std::optional<bool> show = p.show;
   std::optional<bool> focusOnCreate = p.focusOnCreate;
+  std::optional<bool> stopShouldClose = p.stopShouldClose;
 
   return createPromiseAsJSIValue(
       rt, [=, this](jsi::Runtime &, std::shared_ptr<Promise> promise) {
@@ -685,6 +717,10 @@ jsi::Value RNNSWindow::modifyWindow(jsi::Runtime &rt, jsi::String windowId,
             } else {
               [window orderOut:nil];
             }
+          }
+          if (stopShouldClose) {
+            [[RNNSWindowHelper shared] setStopShouldClose:*stopShouldClose
+                                              forWindowId:nsWid];
           }
 
           jsInvoker_->invokeAsync([promise](jsi::Runtime &) {
@@ -896,14 +932,5 @@ jsi::Value RNNSWindow::sendToBack(jsi::Runtime &rt, jsi::String windowId) {
         });
       });
 }
-
-void RNNSWindow::acknowledgeClose(jsi::Runtime &rt, jsi::String windowId,
-                                  bool shouldClose) {}
-
-void RNNSWindow::registerWillCloseHandler(jsi::Runtime &rt,
-                                          jsi::String windowId) {}
-
-void RNNSWindow::unregisterWillCloseHandler(jsi::Runtime &rt,
-                                            jsi::String windowId) {}
 
 } // namespace facebook::react

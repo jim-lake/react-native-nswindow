@@ -135,22 +135,6 @@ function App() {
     };
   }, []);
 
-  // Handle willClose by always acknowledging (allow close)
-  useEffect(() => {
-    console.log('[App] useEffect - setting up willClose acknowledger');
-    const sub = NSWindowModule.onWindowWillClose((windowId: string) => {
-      console.log(
-        '[App] willClose acknowledger - acknowledging close for:',
-        windowId
-      );
-      NSWindowModule.acknowledgeClose(windowId, true);
-    });
-    return () => {
-      console.log('[App] Cleaning up willClose acknowledger');
-      sub.remove();
-    };
-  }, []);
-
   const refreshWindows = async () => {
     console.log('[App] refreshWindows called');
     try {
@@ -177,8 +161,6 @@ function App() {
       });
       console.log('[App] opened notes window:', id);
       appendLog(`opened notes: ${id.slice(0, 8)}`);
-      console.log('[App] registering willClose handler for:', id);
-      NSWindowModule.registerWillCloseHandler(id);
       refreshWindows();
     } catch (e: any) {
       console.error('[App] openNotes error:', e);
@@ -483,6 +465,32 @@ function App() {
               `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
             );
             safeCall('modifyWindow(resize)', () =>
+              NSWindowModule.modifyWindow(firstId, payload)
+            );
+          }}
+        />
+        <Button
+          title='Prevent Close'
+          onPress={() => {
+            const payload = { stopShouldClose: true };
+            console.log('[App] modifyWindow:', firstId, payload);
+            appendLog(
+              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
+            );
+            safeCall('modifyWindow(preventClose)', () =>
+              NSWindowModule.modifyWindow(firstId, payload)
+            );
+          }}
+        />
+        <Button
+          title='Unprevent Close'
+          onPress={() => {
+            const payload = { stopShouldClose: false };
+            console.log('[App] modifyWindow:', firstId, payload);
+            appendLog(
+              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
+            );
+            safeCall('modifyWindow(unpreventClose)', () =>
               NSWindowModule.modifyWindow(firstId, payload)
             );
           }}
