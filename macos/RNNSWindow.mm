@@ -577,10 +577,119 @@ jsi::Value RNNSWindow::closeWindow(jsi::Runtime &rt, jsi::String windowId) {
 jsi::Value RNNSWindow::modifyWindow(jsi::Runtime &rt, jsi::String windowId,
                                     jsi::Object props) {
   std::string wid = windowId.utf8(rt);
+  auto p = NativeNSWindowModifyableWindowPropsBridging<ModifyProps>::fromJs(
+      rt, props, jsInvoker_);
+
+  auto toNSString = [](const std::optional<std::string> &s) -> NSString * {
+    return s ? [NSString stringWithUTF8String:s->c_str()] : nil;
+  };
+
+  NSString *nsWid = [NSString stringWithUTF8String:wid.c_str()];
+  std::optional<double> x = p.x, y = p.y, width = p.width, height = p.height;
+  std::optional<double> minWidth = p.minWidth, minHeight = p.minHeight;
+  std::optional<double> maxWidth = p.maxWidth, maxHeight = p.maxHeight;
+  std::optional<bool> center = p.center;
+  NSString *title = toNSString(p.title);
+  std::optional<bool> resizable = p.resizable;
+  std::optional<bool> movable = p.movable;
+  std::optional<bool> alwaysOnTop = p.alwaysOnTop;
+  NSString *level = toNSString(p.level);
+  std::optional<bool> show = p.show;
+  std::optional<bool> focusOnCreate = p.focusOnCreate;
+
   return createPromiseAsJSIValue(
       rt, [=, this](jsi::Runtime &, std::shared_ptr<Promise> promise) {
-        jsInvoker_->invokeAsync([promise](jsi::Runtime &) {
-          promise->resolve(jsi::Value::undefined());
+        dispatch_async(dispatch_get_main_queue(), ^{
+          NSWindow *window = [[RNNSWindowHelper shared] windowForId:nsWid];
+          if (!window) {
+            jsInvoker_->invokeAsync([promise, wid](jsi::Runtime &) {
+              promise->reject("Window not found: " + wid);
+            });
+            return;
+          }
+
+          NSRect frame = window.frame;
+          BOOL frameChanged = NO;
+          if (x) {
+            frame.origin.x = *x;
+            frameChanged = YES;
+          }
+          if (y) {
+            frame.origin.y = *y;
+            frameChanged = YES;
+          }
+          if (width) {
+            frame.size.width = *width;
+            frameChanged = YES;
+          }
+          if (height) {
+            frame.size.height = *height;
+            frameChanged = YES;
+          }
+          if (frameChanged) {
+            [window setFrame:frame display:YES animate:YES];
+          }
+
+          if (minWidth || minHeight) {
+            window.minSize =
+                NSMakeSize(minWidth.value_or(window.minSize.width),
+                           minHeight.value_or(window.minSize.height));
+          }
+          if (maxWidth || maxHeight) {
+            window.maxSize =
+                NSMakeSize(maxWidth.value_or(window.maxSize.width),
+                           maxHeight.value_or(window.maxSize.height));
+          }
+
+          if (center && *center) {
+            [window center];
+          }
+          if (title) {
+            window.title = title;
+          }
+          if (resizable) {
+            if (*resizable) {
+              window.styleMask |= NSWindowStyleMaskResizable;
+            } else {
+              window.styleMask &= ~NSWindowStyleMaskResizable;
+            }
+          }
+          if (movable) {
+            window.movable = *movable;
+          }
+          if (alwaysOnTop) {
+            window.level =
+                *alwaysOnTop ? NSFloatingWindowLevel : NSNormalWindowLevel;
+          } else if (level) {
+            if ([level isEqualToString:@"floating"]) {
+              window.level = NSFloatingWindowLevel;
+            } else if ([level isEqualToString:@"modalPanel"]) {
+              window.level = NSModalPanelWindowLevel;
+            } else if ([level isEqualToString:@"mainMenu"]) {
+              window.level = NSMainMenuWindowLevel;
+            } else if ([level isEqualToString:@"statusBar"]) {
+              window.level = NSStatusWindowLevel;
+            } else if ([level isEqualToString:@"screenSaver"]) {
+              window.level = NSScreenSaverWindowLevel;
+            } else {
+              window.level = NSNormalWindowLevel;
+            }
+          }
+          if (show) {
+            if (*show) {
+              if (focusOnCreate && *focusOnCreate) {
+                [window makeKeyAndOrderFront:nil];
+              } else {
+                [window orderFront:nil];
+              }
+            } else {
+              [window orderOut:nil];
+            }
+          }
+
+          jsInvoker_->invokeAsync([promise](jsi::Runtime &) {
+            promise->resolve(jsi::Value::undefined());
+          });
         });
       });
 }

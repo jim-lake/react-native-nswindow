@@ -265,11 +265,13 @@ function App() {
     try {
       const result = await fn();
       console.log(`[App] ${name} result:`, result);
-      appendLog(`${name}: success`);
+      appendLog(`${name} (${firstId?.slice(0, 8) ?? 'none'}): success`);
       return result;
     } catch (e: any) {
       console.error(`[App] ${name} error:`, e);
-      appendLog(`ERROR ${name}: ${e.message}`);
+      appendLog(
+        `ERROR ${name} (${firstId?.slice(0, 8) ?? 'none'}): ${e.message}`
+      );
     }
   };
 
@@ -422,58 +424,70 @@ function App() {
       <View style={styles.row}>
         <Button
           title='Resize 600x400'
-          onPress={() =>
+          onPress={() => {
+            const payload = { width: 600, height: 400 };
+            console.log('[App] modifyWindow:', firstId, payload);
+            appendLog(
+              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
+            );
             safeCall('modifyWindow(size)', () =>
-              NSWindowModule.modifyWindow(firstId, { width: 600, height: 400 })
-            )
-          }
+              NSWindowModule.modifyWindow(firstId, payload)
+            );
+          }}
         />
         <Button
           title='Move (100,100)'
-          onPress={() =>
+          onPress={() => {
+            const payload = { x: 100, y: 100 };
+            console.log('[App] modifyWindow:', firstId, payload);
+            appendLog(
+              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
+            );
             safeCall('modifyWindow(pos)', () =>
-              NSWindowModule.modifyWindow(firstId, { x: 100, y: 100 })
-            )
-          }
+              NSWindowModule.modifyWindow(firstId, payload)
+            );
+          }}
         />
         <Button
           title='Title: Modified'
-          onPress={() =>
+          onPress={() => {
+            const payload = { title: 'Modified!' };
+            console.log('[App] modifyWindow:', firstId, payload);
+            appendLog(
+              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
+            );
             safeCall('modifyWindow(title)', () =>
-              NSWindowModule.modifyWindow(firstId, { title: 'Modified!' })
-            )
-          }
+              NSWindowModule.modifyWindow(firstId, payload)
+            );
+          }}
         />
         <Button
           title='Lock Resize'
-          onPress={() =>
+          onPress={() => {
+            const payload = { resizable: false };
+            console.log('[App] modifyWindow:', firstId, payload);
+            appendLog(
+              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
+            );
             safeCall('modifyWindow(noResize)', () =>
-              NSWindowModule.modifyWindow(firstId, { resizable: false })
-            )
-          }
+              NSWindowModule.modifyWindow(firstId, payload)
+            );
+          }}
         />
         <Button
           title='Unlock Resize'
-          onPress={() =>
+          onPress={() => {
+            const payload = { resizable: true };
+            console.log('[App] modifyWindow:', firstId, payload);
+            appendLog(
+              `modify ${firstId?.slice(0, 8)}: ${JSON.stringify(payload)}`
+            );
             safeCall('modifyWindow(resize)', () =>
-              NSWindowModule.modifyWindow(firstId, { resizable: true })
-            )
-          }
+              NSWindowModule.modifyWindow(firstId, payload)
+            );
+          }}
         />
       </View>
-
-      <Text style={styles.section}>Get State</Text>
-      <Button
-        title='Log State of Last'
-        onPress={() =>
-          safeCall('getWindowState', async () => {
-            const state = await NSWindowModule.getWindowState(firstId);
-            console.log('[App] Window state:', JSON.stringify(state, null, 2));
-            appendLog(`state: ${JSON.stringify(state)}`);
-            return state;
-          })
-        }
-      />
 
       <Text style={styles.section}>Event Log</Text>
       <View style={styles.logBox}>
