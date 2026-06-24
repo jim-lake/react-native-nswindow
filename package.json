@@ -13,9 +13,15 @@
     "!**/__tests__"
   ],
   "scripts": {
-    "typescript": "tsc --noEmit"
+    "typescript": "tsc --noEmit",
+    "pretty": "prettier --write . && clang-format -i macos/*.h macos/*.mm"
   },
-  "keywords": ["react-native", "macos", "nswindow", "multi-window"],
+  "keywords": [
+    "react-native",
+    "macos",
+    "nswindow",
+    "multi-window"
+  ],
   "license": "MIT",
   "peerDependencies": {
     "react": ">=19.0.0",
@@ -23,6 +29,7 @@
     "react-native-macos": ">=0.81.0"
   },
   "devDependencies": {
+    "prettier": "^3.8.4",
     "typescript": "^5.4.0"
   },
   "codegenConfig": {

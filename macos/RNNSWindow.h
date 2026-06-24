@@ -42,6 +42,8 @@ class RNNSWindow : public NativeNSWindowCxxSpec<RNNSWindow> {
 public:
   RNNSWindow(std::shared_ptr<CallInvoker> jsInvoker);
 
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowClose;
+
   jsi::Value addWindow(jsi::Runtime &rt, jsi::Object props);
   jsi::Value closeWindow(jsi::Runtime &rt, jsi::String windowId);
   jsi::Value modifyWindow(jsi::Runtime &rt, jsi::String windowId,

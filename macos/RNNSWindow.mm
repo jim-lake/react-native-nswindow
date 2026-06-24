@@ -6,6 +6,7 @@
 
 // Obj-C helper — all access on main thread only (lockless)
 @interface RNNSWindowHelper : NSObject <NSWindowDelegate>
+@property(nonatomic, assign) facebook::react::RNNSWindow *module;
 + (instancetype)shared;
 - (NSString *)createWindowWithComponent:(NSString *)componentName
                              windowName:(NSString *)windowName
@@ -60,8 +61,69 @@
   if (self) {
     _windows = [NSMutableDictionary new];
     _windowNames = [NSMutableDictionary new];
+
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(notificationWindowWillClose:)
+               name:NSWindowWillCloseNotification
+             object:nil];
   }
   return self;
+}
+
+- (void)notificationWindowWillClose:(NSNotification *)notification {
+  NSWindow *window = notification.object;
+  if (!window) {
+    return;
+  }
+  NSString *windowId = nil;
+  for (NSString *key in _windows) {
+    if (_windows[key] == window) {
+      windowId = key;
+      break;
+    }
+  }
+  if (!windowId) {
+    windowId = [[NSUUID UUID] UUIDString];
+  } else {
+    [_windows removeObjectForKey:windowId];
+    [_windowNames removeObjectForKey:windowId];
+  }
+  if (self.module) {
+    self.module->emitOnWindowClose(std::string([windowId UTF8String]));
+  }
+}
+
+- (void)syncWithAppWindows {
+  NSArray<NSWindow *> *appWindows = [NSApp windows];
+
+  // Add untracked windows
+  for (NSWindow *window in appWindows) {
+    BOOL found = NO;
+    for (NSWindow *tracked in _windows.allValues) {
+      if (tracked == window) {
+        found = YES;
+        break;
+      }
+    }
+    if (!found) {
+      NSString *windowId = [[NSUUID UUID] UUIDString];
+      _windows[windowId] = window;
+      _windowNames[windowId] = @"external";
+    }
+  }
+
+  // Remove gone windows
+  NSMutableArray<NSString *> *toRemove = [NSMutableArray new];
+  for (NSString *key in _windows) {
+    if (![appWindows containsObject:_windows[key]]) {
+      [toRemove addObject:key];
+    }
+  }
+  for (NSString *key in toRemove) {
+    [_windows removeObjectForKey:key];
+    [_windowNames removeObjectForKey:key];
+  }
 }
 
 - (NSWindow *_Nullable)windowForId:(NSString *)windowId {
@@ -69,6 +131,7 @@
 }
 
 - (NSArray<NSString *> *)allWindowIds {
+  [self syncWithAppWindows];
   return [_windows allKeys];
 }
 
@@ -292,7 +355,11 @@
 namespace facebook::react {
 
 RNNSWindow::RNNSWindow(std::shared_ptr<CallInvoker> jsInvoker)
-    : NativeNSWindowCxxSpec(std::move(jsInvoker)) {}
+    : NativeNSWindowCxxSpec(std::move(jsInvoker)) {
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [RNNSWindowHelper shared].module = this;
+  });
+}
 
 jsi::Value RNNSWindow::addWindow(jsi::Runtime &rt, jsi::Object props) {
   auto p = NativeNSWindowWindowPropsBridging<WindowProps>::fromJs(rt, props,
@@ -449,12 +516,50 @@ jsi::Value RNNSWindow::listWindows(jsi::Runtime &rt) {
 
 jsi::Value RNNSWindow::getWindowState(jsi::Runtime &rt, jsi::String windowId) {
   std::string wid = windowId.utf8(rt);
-  return createPromiseAsJSIValue(
-      rt, [=, this](jsi::Runtime &, std::shared_ptr<Promise> promise) {
-        jsInvoker_->invokeAsync([promise](jsi::Runtime &) {
-          promise->resolve(jsi::Value::undefined());
+  return createPromiseAsJSIValue(rt, [=,
+                                      this](jsi::Runtime &,
+                                            std::shared_ptr<Promise> promise) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      NSString *nsWid = [NSString stringWithUTF8String:wid.c_str()];
+      NSWindow *window = [[RNNSWindowHelper shared] windowForId:nsWid];
+      NSString *name = [[RNNSWindowHelper shared] windowNameForId:nsWid] ?: @"";
+
+      if (!window) {
+        jsInvoker_->invokeAsync([promise, wid](jsi::Runtime &) {
+          promise->reject("Window not found: " + wid);
         });
+        return;
+      }
+
+      NSRect frame = window.frame;
+      bool isKey = [window isKeyWindow];
+      bool isMini = [window isMiniaturized];
+      bool isFS = (window.styleMask & NSWindowStyleMaskFullScreen) != 0;
+      bool isVis = [window isVisible];
+      std::string nameStr = [name UTF8String];
+      double x = frame.origin.x;
+      double y = frame.origin.y;
+      double w = frame.size.width;
+      double h = frame.size.height;
+
+      jsInvoker_->invokeAsync([promise, wid, nameStr, x, y, w, h, isKey, isMini,
+                               isFS, isVis](jsi::Runtime &rt2) {
+        auto obj = jsi::Object(rt2);
+        obj.setProperty(rt2, "windowId", jsi::String::createFromUtf8(rt2, wid));
+        obj.setProperty(rt2, "windowName",
+                        jsi::String::createFromUtf8(rt2, nameStr));
+        obj.setProperty(rt2, "x", x);
+        obj.setProperty(rt2, "y", y);
+        obj.setProperty(rt2, "width", w);
+        obj.setProperty(rt2, "height", h);
+        obj.setProperty(rt2, "isKeyWindow", isKey);
+        obj.setProperty(rt2, "isMinimized", isMini);
+        obj.setProperty(rt2, "isFullScreen", isFS);
+        obj.setProperty(rt2, "isVisible", isVis);
+        promise->resolve(std::move(obj));
       });
+    });
+  });
 }
 
 jsi::Value RNNSWindow::focusWindow(jsi::Runtime &rt, jsi::String windowId) {

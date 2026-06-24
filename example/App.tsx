@@ -98,13 +98,17 @@ function App() {
       NSWindowModule.onWindowMove((p: WindowMovePayload) => {
         console.log('[App] onWindowMove:', p);
         appendLog(
-          `move: ${p.windowId.slice(0, 8)} → (${Math.round(p.x)},${Math.round(p.y)})`
+          `move: ${p.windowId.slice(0, 8)} → (${Math.round(p.x)},${Math.round(
+            p.y
+          )})`
         );
       }),
       NSWindowModule.onWindowResize((p: WindowResizePayload) => {
         console.log('[App] onWindowResize:', p);
         appendLog(
-          `resize: ${p.windowId.slice(0, 8)} → ${Math.round(p.width)}x${Math.round(p.height)}`
+          `resize: ${p.windowId.slice(0, 8)} → ${Math.round(
+            p.width
+          )}x${Math.round(p.height)}`
         );
       }),
       NSWindowModule.onWindowMinimize((windowId: string) => {
@@ -254,7 +258,7 @@ function App() {
     }
   };
 
-  const firstId = windows[0];
+  const firstId = windows[windows.length - 1];
 
   const safeCall = async (name: string, fn: () => Promise<any>) => {
     console.log(`[App] safeCall: ${name}, windowId:`, firstId);
@@ -313,10 +317,21 @@ function App() {
       </Text>
       <View style={styles.row}>
         <Button
-          title='Refresh List'
-          onPress={() => {
-            console.log('[App] Button press: Refresh');
-            refreshWindows();
+          title='List Windows'
+          onPress={async () => {
+            try {
+              const ids = await NSWindowModule.listWindows();
+              console.log('[App] listWindows:', ids);
+              appendLog(
+                `listWindows: [${ids
+                  .map((id: string) => id.slice(0, 8))
+                  .join(', ')}]`
+              );
+              setWindows(ids);
+            } catch (e: any) {
+              console.error('[App] listWindows error:', e);
+              appendLog(`ERROR listWindows: ${e.message}`);
+            }
           }}
         />
         <Button
@@ -387,9 +402,23 @@ function App() {
             safeCall('sendToBack', () => NSWindowModule.sendToBack(firstId))
           }
         />
+        <Button
+          title='Get State'
+          onPress={async () => {
+            if (!firstId) return;
+            try {
+              const state = await NSWindowModule.getWindowState(firstId);
+              console.log('[App] getWindowState:', state);
+              appendLog(`getState: ${JSON.stringify(state)}`);
+            } catch (e: any) {
+              console.error('[App] getWindowState error:', e);
+              appendLog(`ERROR getWindowState: ${e.message}`);
+            }
+          }}
+        />
       </View>
 
-      <Text style={styles.section}>Modify First Window</Text>
+      <Text style={styles.section}>Modify Last Window</Text>
       <View style={styles.row}>
         <Button
           title='Resize 600x400'
@@ -435,7 +464,7 @@ function App() {
 
       <Text style={styles.section}>Get State</Text>
       <Button
-        title='Log State of First'
+        title='Log State of Last'
         onPress={() =>
           safeCall('getWindowState', async () => {
             const state = await NSWindowModule.getWindowState(firstId);
