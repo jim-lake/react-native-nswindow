@@ -3,10 +3,7 @@ import { TurboModuleRegistry } from 'react-native';
 import type { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
 
 export type TitleBarStyle =
-  | 'default'
-  | 'hidden'
-  | 'hiddenInset'
-  | 'transparent';
+  'default' | 'hidden' | 'hiddenInset' | 'transparent';
 
 export type WindowLevel =
   | 'normal'
@@ -85,6 +82,10 @@ export interface WindowResizePayload {
   width: number;
   height: number;
 }
+export interface WindowOcclusionStatePayload {
+  windowId: string;
+  isVisible: boolean;
+}
 
 export interface Spec extends TurboModule {
   addWindow(props: WindowProps): Promise<string>;
@@ -115,6 +116,7 @@ export interface Spec extends TurboModule {
   readonly onWindowDeminimize: EventEmitter<WindowId>;
   readonly onWindowEnterFullScreen: EventEmitter<WindowId>;
   readonly onWindowExitFullScreen: EventEmitter<WindowId>;
+  readonly onWindowOcclusionStateChange: EventEmitter<WindowOcclusionStatePayload>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('NSWindowModule');

@@ -8,5 +8,6 @@ export type {
   WindowId,
   WindowMovePayload,
   WindowResizePayload,
+  WindowOcclusionStatePayload,
   Spec,
 } from '../spec/NativeNSWindow';

@@ -1,12 +1,19 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
+    "types": [],
     "paths": {
       "react-native-nswindow": ["../src/index"],
       "react-native": ["./node_modules/react-native-macos"]
     },
     "baseUrl": "."
   },
-  "include": ["**/*.ts", "**/*.tsx", "../src/**/*.ts", "../src/**/*.tsx", "../spec/**/*.ts"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "../src/**/*.ts",
+    "../src/**/*.tsx",
+    "../spec/**/*.ts"
+  ],
   "exclude": ["**/node_modules", "**/Pods"]
 }

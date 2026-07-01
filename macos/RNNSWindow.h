@@ -34,6 +34,8 @@ using WindowMovePayload =
     NativeNSWindowWindowMovePayload<std::string, double, double>;
 using WindowResizePayload =
     NativeNSWindowWindowResizePayload<std::string, double, double>;
+using WindowOcclusionStatePayload =
+    NativeNSWindowWindowOcclusionStatePayload<std::string, bool>;
 using WindowStateResult =
     NativeNSWindowWindowState<std::string, std::string, double, double, double,
                               double, bool, bool, bool, bool>;
@@ -73,6 +75,22 @@ template <> struct Bridging<WindowResizePayload> {
   }
 };
 
+template <> struct Bridging<WindowOcclusionStatePayload> {
+  static WindowOcclusionStatePayload
+  fromJs(jsi::Runtime &rt, const jsi::Object &value,
+         const std::shared_ptr<CallInvoker> &jsInvoker) {
+    return NativeNSWindowWindowOcclusionStatePayloadBridging<
+        WindowOcclusionStatePayload>::fromJs(rt, value, jsInvoker);
+  }
+
+  static jsi::Object toJs(jsi::Runtime &rt,
+                          const WindowOcclusionStatePayload &value,
+                          const std::shared_ptr<CallInvoker> &jsInvoker) {
+    return NativeNSWindowWindowOcclusionStatePayloadBridging<
+        WindowOcclusionStatePayload>::toJs(rt, value, jsInvoker);
+  }
+};
+
 } // namespace facebook::react
 
 namespace facebook::react {
@@ -92,6 +110,7 @@ public:
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowDeminimize;
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowEnterFullScreen;
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowExitFullScreen;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowOcclusionStateChange;
 
   jsi::Value addWindow(jsi::Runtime &rt, jsi::Object props);
   jsi::Value closeWindow(jsi::Runtime &rt, jsi::String windowId);

@@ -22,7 +22,8 @@
     "!**/__tests__"
   ],
   "scripts": {
-    "typescript": "tsc --noEmit",
+    "ts:check": "tsc --noEmit",
+    "lint": "eslint . --fix",
     "pretty": "prettier --write . && clang-format -i macos/*.h macos/*.mm"
   },
   "keywords": [
@@ -38,8 +39,11 @@
     "react-native-macos": ">=0.81.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
     "prettier": "^3.8.4",
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.62.0"
   },
   "codegenConfig": {
     "name": "RNNSWindowSpec",

@@ -114,6 +114,7 @@ All properties are optional except `componentName`, `windowName`, and `initialPr
 | `onWindowDeminimize` | windowId | Restored from dock |
 | `onWindowEnterFullScreen` | windowId | Entered full screen |
 | `onWindowExitFullScreen` | windowId | Exited full screen |
+| `onWindowOcclusionStateChange` | `{ windowId, isVisible }` | Window occlusion state changed (visible/occluded) |
 
 ## How It Works
 

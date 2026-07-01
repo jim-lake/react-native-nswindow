@@ -5,9 +5,9 @@
   "scripts": {
     "start": "react-native start",
     "ts:check": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "eslint . --fix",
     "pretty": "prettier --write . && clang-format -i macos/NSWindowExample-macOS/*.{h,m,mm}",
-    "build:macos": "react-native build-macos --mode Debug",
+    "build:macos": "LOGFILE=/tmp/rn-nswindow-example-build-$(date +%s).log; react-native build-macos --mode Debug > $LOGFILE 2>&1 && echo \"BUILD SUCCEEDED — $LOGFILE\" || (echo \"BUILD FAILED — $LOGFILE\"; exit 1)",
     "run:macos": "react-native run-macos --mode Debug"
   },
   "dependencies": {
@@ -21,17 +21,20 @@
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
+    "@eslint/js": "^9.39.4",
     "@react-native-community/cli": "20.0.0",
     "@react-native-community/cli-platform-android": "20.0.0",
     "@react-native-community/cli-platform-ios": "20.0.0",
     "@react-native/babel-preset": "0.81.2",
-    "@react-native/eslint-config": "0.81.2",
     "@react-native/metro-config": "0.81.2",
     "@react-native/typescript-config": "0.81.2",
     "@types/react": "^19.1.0",
-    "eslint": "^8.19.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.8.4",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.62.0"
   },
   "engines": {
     "node": ">=20"

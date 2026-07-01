@@ -104,6 +104,10 @@
            selector:@selector(notificationWindowDidExitFullScreen:)
                name:NSWindowDidExitFullScreenNotification
              object:nil];
+    [nc addObserver:self
+           selector:@selector(notificationWindowDidChangeOcclusionState:)
+               name:NSWindowDidChangeOcclusionStateNotification
+             object:nil];
   }
   return self;
 }
@@ -212,6 +216,19 @@
   NSString *windowId = [self windowIdForWindow:window];
   if (self.module) {
     self.module->emitOnWindowExitFullScreen(std::string([windowId UTF8String]));
+  }
+}
+
+- (void)notificationWindowDidChangeOcclusionState:
+    (NSNotification *)notification {
+  NSWindow *window = notification.object;
+  NSString *windowId = [self windowIdForWindow:window];
+  if (self.module) {
+    bool isVisible =
+        (window.occlusionState & NSWindowOcclusionStateVisible) != 0;
+    facebook::react::WindowOcclusionStatePayload payload{
+        std::string([windowId UTF8String]), isVisible};
+    self.module->emitOnWindowOcclusionStateChange(payload);
   }
 }
 
