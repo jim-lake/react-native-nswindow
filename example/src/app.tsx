@@ -6,8 +6,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
-  TouchableOpacity,
 } from 'react-native';
 import NSWindowModule from 'react-native-nswindow';
 import type {
@@ -15,6 +13,11 @@ import type {
   WindowResizePayload,
   WindowOcclusionStatePayload,
 } from 'react-native-nswindow';
+import NotesWindow from './notes_window';
+import ColorWindow from './color_window';
+import MiniWindow from './mini_window';
+import TextButton from './components/text_button';
+import Select from './components/select';
 
 console.log('[NSWindowExample] App.tsx loading...');
 console.log('[NSWindowExample] NSWindowModule:', NSWindowModule);
@@ -27,66 +30,14 @@ console.log(
   Dimensions.get('screen')
 );
 
-// ─── Styled Button ───
-
-function Btn({ title, onPress }: { title: string; onPress: () => void }) {
-  return (
-    <TouchableOpacity style={styles.btn} onPress={onPress} activeOpacity={0.7}>
-      <Text style={styles.btnText}>{title}</Text>
-    </TouchableOpacity>
-  );
-}
-
-// ─── Secondary window components ───
-
-function NotesWindow() {
-  console.log('[NotesWindow] Rendering');
-  const [text, setText] = useState('');
-  return (
-    <View style={[styles.container, { backgroundColor: '#fff' }]}>
-      <Text style={[styles.title, { color: '#000' }]}>📝 Notes</Text>
-      <TextInput
-        style={styles.textInput}
-        multiline
-        value={text}
-        onChangeText={(v) => {
-          console.log('[NotesWindow] onChangeText:', v.length, 'chars');
-          setText(v);
-        }}
-        placeholder='Type notes here...'
-        placeholderTextColor='#999'
-      />
-    </View>
-  );
-}
-
-function ColorWindow({ color = '#ff6b6b' }: { color?: string }) {
-  console.log('[ColorWindow] Rendering with color:', color);
-  return (
-    <View style={[styles.container, { backgroundColor: color }]}>
-      <Text style={[styles.title, { color: '#fff' }]}>🎨 Color Window</Text>
-      <Text style={[styles.subtitle, { color: '#fff' }]}>
-        Background: {color}
-      </Text>
-    </View>
-  );
-}
-
-function MiniWindow() {
-  console.log('[MiniWindow] Rendering');
-  return (
-    <View style={[styles.container, { backgroundColor: '#2d3436' }]}>
-      <Text style={[styles.title, { color: '#fff' }]}>🔲 Mini</Text>
-    </View>
-  );
-}
-
 // ─── Main window ───
 
 function App() {
   console.log('[App] Rendering main window');
   const [log, setLog] = useState<string[]>([]);
   const [windows, setWindows] = useState<string[]>([]);
+  const [actionWindowId, setActionWindowId] = useState<string | undefined>();
+  const [modifyWindowId, setModifyWindowId] = useState<string | undefined>();
 
   const appendLog = (msg: string) => {
     console.log('[App Event]', msg);
@@ -297,19 +248,21 @@ function App() {
     }
   };
 
-  const firstId = windows[windows.length - 1];
-
-  const safeCall = async (name: string, fn: () => Promise<any>) => {
-    console.log(`[App] safeCall: ${name}, windowId:`, firstId);
+  const safeCall = async (
+    name: string,
+    targetId: string | undefined,
+    fn: () => Promise<any>
+  ) => {
+    console.log(`[App] safeCall: ${name}, windowId:`, targetId);
     try {
       const result = await fn();
       console.log(`[App] ${name} result:`, result);
-      appendLog(`${name} (${firstId?.slice(0, 8) ?? 'none'}): success`);
+      appendLog(`${name} (${targetId?.slice(0, 8) ?? 'none'}): success`);
       return result;
     } catch (e: any) {
       console.error(`[App] ${name} error:`, e);
       appendLog(
-        `ERROR ${name} (${firstId?.slice(0, 8) ?? 'none'}): ${e.message}`
+        `ERROR ${name} (${targetId?.slice(0, 8) ?? 'none'}): ${e.message}`
       );
     }
   };
@@ -324,35 +277,35 @@ function App() {
 
         <Text style={styles.section}>Create Windows</Text>
         <View style={styles.row}>
-          <Btn
+          <TextButton
             title='📝 Notes'
             onPress={() => {
               console.log('[App] Button press: Notes');
               openNotes();
             }}
           />
-          <Btn
+          <TextButton
             title='🎨 Color'
             onPress={() => {
               console.log('[App] Button press: Color');
               openColor();
             }}
           />
-          <Btn
+          <TextButton
             title='🔲 Mini (On Top)'
             onPress={() => {
               console.log('[App] Button press: Mini');
               openMini();
             }}
           />
-          <Btn
+          <TextButton
             title='👻 Hidden'
             onPress={() => {
               console.log('[App] Button press: Hidden');
               openHidden();
             }}
           />
-          <Btn
+          <TextButton
             title='💾 AutoSave'
             onPress={() => {
               console.log('[App] Button press: AutoSave');
@@ -361,12 +314,15 @@ function App() {
           />
         </View>
 
-        <Text style={styles.section}>
-          Window Actions{' '}
-          {firstId ? `(on ${firstId.slice(0, 8)})` : '(none open)'}
-        </Text>
+        <Text style={styles.section}>Window Actions</Text>
+        <Select
+          options={windows}
+          selectedValue={actionWindowId}
+          onSelect={setActionWindowId}
+          placeholder='— select window —'
+        />
         <View style={styles.row}>
-          <Btn
+          <TextButton
             title='List Windows'
             onPress={async () => {
               try {
@@ -384,84 +340,95 @@ function App() {
               }
             }}
           />
-          <Btn
+          <TextButton
             title='Close'
             onPress={() =>
-              safeCall('closeWindow', () => NSWindowModule.closeWindow(firstId))
+              safeCall('closeWindow', actionWindowId, () =>
+                NSWindowModule.closeWindow(actionWindowId!)
+              )
             }
           />
-          <Btn
+          <TextButton
             title='Focus'
             onPress={() =>
-              safeCall('focusWindow', () => NSWindowModule.focusWindow(firstId))
+              safeCall('focusWindow', actionWindowId, () =>
+                NSWindowModule.focusWindow(actionWindowId!)
+              )
             }
           />
-          <Btn
+          <TextButton
             title='Hide'
             onPress={() =>
-              safeCall('hideWindow', () => NSWindowModule.hideWindow(firstId))
+              safeCall('hideWindow', actionWindowId, () =>
+                NSWindowModule.hideWindow(actionWindowId!)
+              )
             }
           />
-          <Btn
+          <TextButton
             title='Show'
             onPress={() =>
-              safeCall('showWindow', () => NSWindowModule.showWindow(firstId))
+              safeCall('showWindow', actionWindowId, () =>
+                NSWindowModule.showWindow(actionWindowId!)
+              )
             }
           />
-          <Btn
+          <TextButton
             title='Minimize'
             onPress={() =>
-              safeCall('minimizeWindow', () =>
-                NSWindowModule.minimizeWindow(firstId)
+              safeCall('minimizeWindow', actionWindowId, () =>
+                NSWindowModule.minimizeWindow(actionWindowId!)
               )
             }
           />
-          <Btn
+          <TextButton
             title='Deminimize'
             onPress={() =>
-              safeCall('deminimizeWindow', () =>
-                NSWindowModule.deminimizeWindow(firstId)
+              safeCall('deminimizeWindow', actionWindowId, () =>
+                NSWindowModule.deminimizeWindow(actionWindowId!)
               )
             }
           />
-          <Btn
+          <TextButton
             title='FullScreen On'
             onPress={() =>
-              safeCall('setFullScreen(true)', () =>
-                NSWindowModule.setFullScreen(firstId, true)
+              safeCall('setFullScreen(true)', actionWindowId, () =>
+                NSWindowModule.setFullScreen(actionWindowId!, true)
               )
             }
           />
-          <Btn
+          <TextButton
             title='FullScreen Off'
             onPress={() =>
-              safeCall('setFullScreen(false)', () =>
-                NSWindowModule.setFullScreen(firstId, false)
+              safeCall('setFullScreen(false)', actionWindowId, () =>
+                NSWindowModule.setFullScreen(actionWindowId!, false)
               )
             }
           />
-          <Btn
+          <TextButton
             title='Bring Front'
             onPress={() =>
-              safeCall('bringToFront', () =>
-                NSWindowModule.bringToFront(firstId)
+              safeCall('bringToFront', actionWindowId, () =>
+                NSWindowModule.bringToFront(actionWindowId!)
               )
             }
           />
-          <Btn
+          <TextButton
             title='Send Back'
             onPress={() =>
-              safeCall('sendToBack', () => NSWindowModule.sendToBack(firstId))
+              safeCall('sendToBack', actionWindowId, () =>
+                NSWindowModule.sendToBack(actionWindowId!)
+              )
             }
           />
-          <Btn
+          <TextButton
             title='Get State'
             onPress={async () => {
-              if (!firstId) {
+              if (!actionWindowId) {
                 return;
               }
               try {
-                const state = await NSWindowModule.getWindowState(firstId);
+                const state =
+                  await NSWindowModule.getWindowState(actionWindowId);
                 console.log('[App] getWindowState:', state);
                 appendLog(`getState: ${JSON.stringify(state)}`);
               } catch (e: any) {
@@ -470,7 +437,7 @@ function App() {
               }
             }}
           />
-          <Btn
+          <TextButton
             title='Screen Info'
             onPress={async () => {
               try {
@@ -485,225 +452,259 @@ function App() {
           />
         </View>
 
-        <Text style={styles.section}>Modify Last Window</Text>
+        <Text style={styles.section}>Modify Window</Text>
+        <Select
+          options={windows}
+          selectedValue={modifyWindowId}
+          onSelect={setModifyWindowId}
+          placeholder='— select window —'
+        />
         <View style={styles.row}>
-          <Btn
+          <TextButton
             title='Resize 600x400'
             onPress={() => {
               const payload = { width: 600, height: 400 };
-              console.log('[App] modifyWindow:', firstId, payload);
-              safeCall('modifyWindow(size)', () =>
-                NSWindowModule.modifyWindow(firstId, payload)
+              console.log('[App] modifyWindow:', modifyWindowId, payload);
+              safeCall('modifyWindow(size)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, payload)
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Move (100,100)'
             onPress={() => {
               const payload = { x: 100, y: 100 };
-              console.log('[App] modifyWindow:', firstId, payload);
-              safeCall('modifyWindow(pos)', () =>
-                NSWindowModule.modifyWindow(firstId, payload)
+              console.log('[App] modifyWindow:', modifyWindowId, payload);
+              safeCall('modifyWindow(pos)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, payload)
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Center'
             onPress={() => {
-              safeCall('modifyWindow(center)', () =>
-                NSWindowModule.modifyWindow(firstId, { center: true })
+              safeCall('modifyWindow(center)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, { center: true })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Title: Modified'
             onPress={() => {
-              safeCall('modifyWindow(title)', () =>
-                NSWindowModule.modifyWindow(firstId, { title: 'Modified!' })
+              safeCall('modifyWindow(title)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  title: 'Modified!',
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Lock Resize'
             onPress={() => {
-              safeCall('modifyWindow(noResize)', () =>
-                NSWindowModule.modifyWindow(firstId, { resizable: false })
+              safeCall('modifyWindow(noResize)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  resizable: false,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Unlock Resize'
             onPress={() => {
-              safeCall('modifyWindow(resize)', () =>
-                NSWindowModule.modifyWindow(firstId, { resizable: true })
+              safeCall('modifyWindow(resize)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  resizable: true,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Prevent Close'
             onPress={() => {
-              safeCall('modifyWindow(preventClose)', () =>
-                NSWindowModule.modifyWindow(firstId, { stopShouldClose: true })
+              safeCall('modifyWindow(preventClose)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  stopShouldClose: true,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Allow Close'
             onPress={() => {
-              safeCall('modifyWindow(allowClose)', () =>
-                NSWindowModule.modifyWindow(firstId, { stopShouldClose: false })
+              safeCall('modifyWindow(allowClose)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  stopShouldClose: false,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='TitleBar Hidden'
             onPress={() => {
-              safeCall('modifyWindow(titleBarHidden)', () =>
-                NSWindowModule.modifyWindow(firstId, {
+              safeCall('modifyWindow(titleBarHidden)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
                   titleBarStyle: 'hidden',
                 })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='TitleBar Default'
             onPress={() => {
-              safeCall('modifyWindow(titleBarDefault)', () =>
-                NSWindowModule.modifyWindow(firstId, {
+              safeCall('modifyWindow(titleBarDefault)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
                   titleBarStyle: 'default',
                 })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Vibrancy Sidebar'
             onPress={() => {
-              safeCall('modifyWindow(vibrancySidebar)', () =>
-                NSWindowModule.modifyWindow(firstId, { vibrancy: 'sidebar' })
+              safeCall('modifyWindow(vibrancySidebar)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  vibrancy: 'sidebar',
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Vibrancy None'
             onPress={() => {
-              safeCall('modifyWindow(vibrancyNone)', () =>
-                NSWindowModule.modifyWindow(firstId, { vibrancy: 'none' })
+              safeCall('modifyWindow(vibrancyNone)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  vibrancy: 'none',
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='BG Red'
             onPress={() => {
-              safeCall('modifyWindow(bgRed)', () =>
-                NSWindowModule.modifyWindow(firstId, {
+              safeCall('modifyWindow(bgRed)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
                   backgroundColor: '#ff0000',
                 })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='BG Blue'
             onPress={() => {
-              safeCall('modifyWindow(bgBlue)', () =>
-                NSWindowModule.modifyWindow(firstId, {
+              safeCall('modifyWindow(bgBlue)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
                   backgroundColor: '#0000ff',
                 })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Shadow Off'
             onPress={() => {
-              safeCall('modifyWindow(noShadow)', () =>
-                NSWindowModule.modifyWindow(firstId, { hasShadow: false })
+              safeCall('modifyWindow(noShadow)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  hasShadow: false,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Shadow On'
             onPress={() => {
-              safeCall('modifyWindow(shadow)', () =>
-                NSWindowModule.modifyWindow(firstId, { hasShadow: true })
+              safeCall('modifyWindow(shadow)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  hasShadow: true,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='No Minimize'
             onPress={() => {
-              safeCall('modifyWindow(noMin)', () =>
-                NSWindowModule.modifyWindow(firstId, { minimizable: false })
+              safeCall('modifyWindow(noMin)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  minimizable: false,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Minimizable'
             onPress={() => {
-              safeCall('modifyWindow(min)', () =>
-                NSWindowModule.modifyWindow(firstId, { minimizable: true })
+              safeCall('modifyWindow(min)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  minimizable: true,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='No Close Btn'
             onPress={() => {
-              safeCall('modifyWindow(noCloseBtn)', () =>
-                NSWindowModule.modifyWindow(firstId, { closable: false })
+              safeCall('modifyWindow(noCloseBtn)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  closable: false,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Closable'
             onPress={() => {
-              safeCall('modifyWindow(closeBtn)', () =>
-                NSWindowModule.modifyWindow(firstId, { closable: true })
+              safeCall('modifyWindow(closeBtn)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, { closable: true })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='No Zoom'
             onPress={() => {
-              safeCall('modifyWindow(noZoom)', () =>
-                NSWindowModule.modifyWindow(firstId, { zoomable: false })
+              safeCall('modifyWindow(noZoom)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  zoomable: false,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Zoomable'
             onPress={() => {
-              safeCall('modifyWindow(zoom)', () =>
-                NSWindowModule.modifyWindow(firstId, { zoomable: true })
+              safeCall('modifyWindow(zoom)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, { zoomable: true })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Lock Move'
             onPress={() => {
-              safeCall('modifyWindow(noMove)', () =>
-                NSWindowModule.modifyWindow(firstId, { movable: false })
+              safeCall('modifyWindow(noMove)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, { movable: false })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Unlock Move'
             onPress={() => {
-              safeCall('modifyWindow(move)', () =>
-                NSWindowModule.modifyWindow(firstId, { movable: true })
+              safeCall('modifyWindow(move)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, { movable: true })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Always On Top'
             onPress={() => {
-              safeCall('modifyWindow(onTop)', () =>
-                NSWindowModule.modifyWindow(firstId, { alwaysOnTop: true })
+              safeCall('modifyWindow(onTop)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
+                  alwaysOnTop: true,
+                })
               );
             }}
           />
-          <Btn
+          <TextButton
             title='Normal Level'
             onPress={() => {
-              safeCall('modifyWindow(normalLevel)', () =>
-                NSWindowModule.modifyWindow(firstId, {
+              safeCall('modifyWindow(normalLevel)', modifyWindowId, () =>
+                NSWindowModule.modifyWindow(modifyWindowId!, {
                   alwaysOnTop: false,
                   level: 'normal',
                 })
@@ -741,34 +742,6 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  btn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#007AFF',
-    borderRadius: 6,
-  },
-  btnText: { color: '#fff', fontSize: 13, fontWeight: '500' },
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#000' },
-  subtitle: { fontSize: 14, marginTop: 8, opacity: 0.7, color: '#000' },
-  textInput: {
-    flex: 1,
-    width: '100%',
-    marginTop: 12,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-    fontSize: 14,
-    color: '#000',
-    backgroundColor: '#fff',
-    textAlignVertical: 'top',
-  },
   logBox: { flex: 1, padding: 10, backgroundColor: '#1e1e1e' },
   logHeader: {
     fontSize: 16,
