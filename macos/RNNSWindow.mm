@@ -1,5 +1,6 @@
 #import "RNNSWindow.h"
 #import "RNNSWindowHelper.h"
+#import <React/RCTConvert.h>
 
 // ─── C++ Implementation ───
 
@@ -252,13 +253,11 @@ jsi::Value RNNSWindow::modifyWindow(jsi::Runtime &rt, jsi::String windowId,
       }
 
       // Background color
-      if (transparent && *transparent) {
-        window.opaque = NO;
-        window.backgroundColor = [NSColor clearColor];
-      } else if (backgroundColor) {
-        window.opaque = YES;
-        window.backgroundColor =
-            [[RNNSWindowHelper shared] colorFromHex:backgroundColor];
+      if (transparent) {
+        window.opaque = !*transparent;
+      }
+      if (backgroundColor) {
+        window.backgroundColor = [RCTConvert NSColor:backgroundColor];
       }
 
       // Shadow

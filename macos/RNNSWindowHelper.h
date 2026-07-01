@@ -47,7 +47,6 @@ class RNNSWindow;
 - (NSString *_Nullable)windowNameForId:(NSString *)windowId;
 - (void)removeWindowForId:(NSString *)windowId;
 - (void)setStopShouldClose:(BOOL)stop forWindowId:(NSString *)windowId;
-- (NSColor *)colorFromHex:(NSString *)hex;
 - (NSVisualEffectMaterial)materialForVibrancy:(NSString *)vibrancy;
 
 @end

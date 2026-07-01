@@ -1,6 +1,7 @@
 #import "RNNSWindowHelper.h"
 #import "RNNSWindow.h"
 #import <RCTAppDelegate.h>
+#import <React/RCTConvert.h>
 #import <React/RCTRootView.h>
 
 @implementation RNNSWindowHelper {
@@ -334,9 +335,9 @@
   // Transparent window
   if (transparent) {
     window.opaque = NO;
-    window.backgroundColor = [NSColor clearColor];
-  } else if (backgroundColor) {
-    window.backgroundColor = [self colorFromHex:backgroundColor];
+  }
+  if (backgroundColor) {
+    window.backgroundColor = [RCTConvert NSColor:backgroundColor];
   }
 
   // Min/Max sizes
@@ -436,17 +437,6 @@
   }
 
   return windowId;
-}
-
-- (NSColor *)colorFromHex:(NSString *)hex {
-  NSString *clean = [hex stringByReplacingOccurrencesOfString:@"#"
-                                                   withString:@""];
-  unsigned int rgb = 0;
-  [[NSScanner scannerWithString:clean] scanHexInt:&rgb];
-  CGFloat r = ((rgb >> 16) & 0xFF) / 255.0;
-  CGFloat g = ((rgb >> 8) & 0xFF) / 255.0;
-  CGFloat b = (rgb & 0xFF) / 255.0;
-  return [NSColor colorWithRed:r green:g blue:b alpha:1.0];
 }
 
 - (NSVisualEffectMaterial)materialForVibrancy:(NSString *)vibrancy {

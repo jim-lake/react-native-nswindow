@@ -86,8 +86,8 @@ All properties are optional except `componentName`, `windowName`, and `initialPr
 | `title` | string | windowName | Title bar text |
 | `titleBarStyle` | string | 'default' | 'default' \| 'hidden' \| 'hiddenInset' \| 'transparent' |
 | `vibrancy` | string | 'none' | 'none' \| 'sidebar' \| 'menu' \| 'popover' \| 'fullScreenUI' \| 'underWindowBackground' \| 'hudWindow' |
-| `backgroundColor` | string | — | Hex color (e.g. '#ff0000') |
-| `transparent` | boolean | false | Fully transparent background |
+| `backgroundColor` | string | — | Any React Native color string (e.g. '#ff0000', 'rgba(0,0,0,0.5)', 'red') |
+| `transparent` | boolean | false | Set window non-opaque (required for translucent backgrounds) |
 | `hasShadow` | boolean | true | Window shadow |
 | `resizable` | boolean | true | Allow resize |
 | `movable` | boolean | true | Allow drag |
@@ -118,6 +118,28 @@ All properties are optional except `componentName`, `windowName`, and `initialPr
 | `onWindowOcclusionStateChange` | `{ windowId, isVisible }` | Window occlusion state changed (visible/occluded) |
 | `onWindowBackingPropertiesChange` | windowId | Backing properties changed (e.g. moved between Retina/non-Retina displays) |
 | `onScreenInfoChange` | — | Screen parameters changed (display added/removed/resized) |
+
+Events use the New Architecture `EventEmitter` pattern. Each event method takes a callback and returns a subscription with a `.remove()` method:
+
+```tsx
+import { useEffect } from 'react';
+import NSWindowModule from 'react-native-nswindow';
+
+useEffect(() => {
+  const subs = [
+    NSWindowModule.onWindowClose((windowId) => {
+      console.log('closed:', windowId);
+    }),
+    NSWindowModule.onWindowMove(({ windowId, x, y }) => {
+      console.log('moved:', windowId, x, y);
+    }),
+    NSWindowModule.onWindowResize(({ windowId, width, height }) => {
+      console.log('resized:', windowId, width, height);
+    }),
+  ];
+  return () => subs.forEach((s) => s.remove());
+}, []);
+```
 
 ## How It Works
 
