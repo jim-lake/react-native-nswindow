@@ -36,9 +36,11 @@ using WindowResizePayload =
     NativeNSWindowWindowResizePayload<std::string, double, double>;
 using WindowOcclusionStatePayload =
     NativeNSWindowWindowOcclusionStatePayload<std::string, bool>;
+using WindowRect = NativeNSWindowRect<double, double, double, double>;
 using WindowStateResult =
     NativeNSWindowWindowState<std::string, std::string, double, double, double,
-                              double, bool, bool, bool, bool>;
+                              double, bool, bool, bool, bool, bool, double,
+                              std::optional<WindowRect>>;
 
 } // namespace facebook::react
 
@@ -111,6 +113,8 @@ public:
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowEnterFullScreen;
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowExitFullScreen;
   using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowOcclusionStateChange;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnWindowBackingPropertiesChange;
+  using NativeNSWindowCxxSpec<RNNSWindow>::emitOnScreenInfoChange;
 
   jsi::Value addWindow(jsi::Runtime &rt, jsi::Object props);
   jsi::Value closeWindow(jsi::Runtime &rt, jsi::String windowId);
@@ -131,6 +135,8 @@ public:
 
   jsi::Value bringToFront(jsi::Runtime &rt, jsi::String windowId);
   jsi::Value sendToBack(jsi::Runtime &rt, jsi::String windowId);
+
+  jsi::Value getScreenInfo(jsi::Runtime &rt);
 };
 
 } // namespace facebook::react

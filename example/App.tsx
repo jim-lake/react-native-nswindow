@@ -154,6 +154,14 @@ function App() {
           );
         }
       ),
+      NSWindowModule.onWindowBackingPropertiesChange((windowId: string) => {
+        console.log('[App] onWindowBackingPropertiesChange:', windowId);
+        appendLog(`backingChange: ${windowId.slice(0, 8)}`);
+      }),
+      NSWindowModule.onScreenInfoChange(() => {
+        console.log('[App] onScreenInfoChange');
+        appendLog('screenInfoChange');
+      }),
     ];
     console.log('[App] Event listeners registered:', subs.length);
     return () => {
@@ -459,6 +467,19 @@ function App() {
               } catch (e: any) {
                 console.error('[App] getWindowState error:', e);
                 appendLog(`ERROR getWindowState: ${e.message}`);
+              }
+            }}
+          />
+          <Btn
+            title='Screen Info'
+            onPress={async () => {
+              try {
+                const info = await NSWindowModule.getScreenInfo();
+                console.log('[App] getScreenInfo:', info);
+                appendLog(`screenInfo: ${JSON.stringify(info)}`);
+              } catch (e: any) {
+                console.error('[App] getScreenInfo error:', e);
+                appendLog(`ERROR getScreenInfo: ${e.message}`);
               }
             }}
           />

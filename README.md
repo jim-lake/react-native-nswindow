@@ -70,6 +70,7 @@ sub.remove(); // cleanup
 | `setFullScreen(windowId, bool)` | Enter/exit full screen. |
 | `bringToFront(windowId)` | Order front. |
 | `sendToBack(windowId)` | Order back. |
+| `getScreenInfo()` | Get screen layout info (all screens, total bounds, main screen). |
 
 ### Window Props
 
@@ -115,6 +116,8 @@ All properties are optional except `componentName`, `windowName`, and `initialPr
 | `onWindowEnterFullScreen` | windowId | Entered full screen |
 | `onWindowExitFullScreen` | windowId | Exited full screen |
 | `onWindowOcclusionStateChange` | `{ windowId, isVisible }` | Window occlusion state changed (visible/occluded) |
+| `onWindowBackingPropertiesChange` | windowId | Backing properties changed (e.g. moved between Retina/non-Retina displays) |
+| `onScreenInfoChange` | — | Screen parameters changed (display added/removed/resized) |
 
 ## How It Works
 

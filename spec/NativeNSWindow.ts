@@ -68,6 +68,28 @@ export interface WindowState {
   isMinimized: boolean;
   isFullScreen: boolean;
   isVisible: boolean;
+  isOccluded: boolean;
+  backingScaleFactor: number;
+  screen: Rect | null;
+}
+
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+export interface Screen {
+  frame: Rect;
+  visibleFrame: Rect;
+}
+export interface ScreenInfo {
+  total: Rect;
+  totalVisibleFrame: Rect;
+
+  screens: Screen[];
+
+  main: Rect;
 }
 
 export type WindowId = string;
@@ -106,6 +128,8 @@ export interface Spec extends TurboModule {
   bringToFront(windowId: string): Promise<void>;
   sendToBack(windowId: string): Promise<void>;
 
+  getScreenInfo(): Promise<ScreenInfo>;
+
   readonly onWindowClose: EventEmitter<WindowId>;
   readonly onWindowWillClose: EventEmitter<WindowId>;
   readonly onWindowMove: EventEmitter<WindowMovePayload>;
@@ -117,6 +141,8 @@ export interface Spec extends TurboModule {
   readonly onWindowEnterFullScreen: EventEmitter<WindowId>;
   readonly onWindowExitFullScreen: EventEmitter<WindowId>;
   readonly onWindowOcclusionStateChange: EventEmitter<WindowOcclusionStatePayload>;
+  readonly onWindowBackingPropertiesChange: EventEmitter<WindowId>;
+  readonly onScreenInfoChange: EventEmitter<void>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('NSWindowModule');
