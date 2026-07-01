@@ -439,6 +439,209 @@
   return windowId;
 }
 
+- (BOOL)modifyWindow:(NSString *)windowId
+                   x:(NSNumber *_Nullable)x
+                   y:(NSNumber *_Nullable)y
+               width:(NSNumber *_Nullable)width
+              height:(NSNumber *_Nullable)height
+            minWidth:(NSNumber *_Nullable)minWidth
+           minHeight:(NSNumber *_Nullable)minHeight
+            maxWidth:(NSNumber *_Nullable)maxWidth
+           maxHeight:(NSNumber *_Nullable)maxHeight
+              center:(NSNumber *_Nullable)center
+               title:(NSString *_Nullable)title
+       titleBarStyle:(NSString *_Nullable)titleBarStyle
+            vibrancy:(NSString *_Nullable)vibrancy
+     backgroundColor:(NSString *_Nullable)backgroundColor
+         transparent:(NSNumber *_Nullable)transparent
+           hasShadow:(NSNumber *_Nullable)hasShadow
+           resizable:(NSNumber *_Nullable)resizable
+             movable:(NSNumber *_Nullable)movable
+         minimizable:(NSNumber *_Nullable)minimizable
+            closable:(NSNumber *_Nullable)closable
+            zoomable:(NSNumber *_Nullable)zoomable
+         alwaysOnTop:(NSNumber *_Nullable)alwaysOnTop
+               level:(NSString *_Nullable)level
+                show:(NSNumber *_Nullable)show
+       focusOnCreate:(NSNumber *_Nullable)focusOnCreate
+       autoSaveFrame:(NSString *_Nullable)autoSaveFrame
+     stopShouldClose:(NSNumber *_Nullable)stopShouldClose {
+
+  NSWindow *window = [self windowForId:windowId];
+  if (!window) {
+    return NO;
+  }
+
+  NSRect frame = window.frame;
+  BOOL frameChanged = NO;
+  if (x) {
+    frame.origin.x = x.doubleValue;
+    frameChanged = YES;
+  }
+  if (y) {
+    frame.origin.y = y.doubleValue;
+    frameChanged = YES;
+  }
+  if (width) {
+    frame.size.width = width.doubleValue;
+    frameChanged = YES;
+  }
+  if (height) {
+    frame.size.height = height.doubleValue;
+    frameChanged = YES;
+  }
+  if (frameChanged) {
+    [window setFrame:frame display:YES animate:YES];
+  }
+
+  if (minWidth || minHeight) {
+    window.minSize =
+        NSMakeSize(minWidth ? minWidth.doubleValue : window.minSize.width,
+                   minHeight ? minHeight.doubleValue : window.minSize.height);
+  }
+  if (maxWidth || maxHeight) {
+    window.maxSize =
+        NSMakeSize(maxWidth ? maxWidth.doubleValue : window.maxSize.width,
+                   maxHeight ? maxHeight.doubleValue : window.maxSize.height);
+  }
+
+  if (center && center.boolValue) {
+    [window center];
+  }
+  if (title) {
+    window.title = title;
+  }
+
+  // Title bar style
+  if (titleBarStyle) {
+    if ([titleBarStyle isEqualToString:@"hidden"]) {
+      window.titlebarAppearsTransparent = YES;
+      window.titleVisibility = NSWindowTitleHidden;
+      window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+    } else if ([titleBarStyle isEqualToString:@"hiddenInset"]) {
+      window.titlebarAppearsTransparent = YES;
+      window.titleVisibility = NSWindowTitleHidden;
+      window.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    } else if ([titleBarStyle isEqualToString:@"transparent"]) {
+      window.titlebarAppearsTransparent = YES;
+      window.titleVisibility = NSWindowTitleVisible;
+      window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+    } else {
+      window.titlebarAppearsTransparent = NO;
+      window.titleVisibility = NSWindowTitleVisible;
+      window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+    }
+  }
+
+  // Background color
+  if (transparent) {
+    window.opaque = !transparent.boolValue;
+  }
+  if (backgroundColor) {
+    window.backgroundColor = [RCTConvert NSColor:backgroundColor];
+  }
+
+  // Shadow
+  if (hasShadow) {
+    window.hasShadow = hasShadow.boolValue;
+  }
+
+  // Vibrancy
+  if (vibrancy) {
+    NSView *content = window.contentView;
+    if ([content isKindOfClass:[NSVisualEffectView class]]) {
+      NSArray<NSView *> *subs = [content.subviews copy];
+      if ([vibrancy isEqualToString:@"none"]) {
+        if (subs.count > 0) {
+          window.contentView = subs[0];
+        }
+      } else {
+        NSVisualEffectView *ev = (NSVisualEffectView *)content;
+        ev.material = [self materialForVibrancy:vibrancy];
+      }
+    } else if (![vibrancy isEqualToString:@"none"]) {
+      NSVisualEffectView *ev =
+          [[NSVisualEffectView alloc] initWithFrame:content.bounds];
+      ev.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+      ev.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+      ev.state = NSVisualEffectStateActive;
+      ev.material = [self materialForVibrancy:vibrancy];
+      content.frame = ev.bounds;
+      content.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+      window.contentView = ev;
+      [ev addSubview:content];
+    }
+  }
+
+  if (resizable) {
+    if (resizable.boolValue) {
+      window.styleMask |= NSWindowStyleMaskResizable;
+    } else {
+      window.styleMask &= ~NSWindowStyleMaskResizable;
+    }
+  }
+  if (movable) {
+    window.movable = movable.boolValue;
+  }
+  if (minimizable) {
+    if (minimizable.boolValue) {
+      window.styleMask |= NSWindowStyleMaskMiniaturizable;
+    } else {
+      window.styleMask &= ~NSWindowStyleMaskMiniaturizable;
+    }
+  }
+  if (closable) {
+    if (closable.boolValue) {
+      window.styleMask |= NSWindowStyleMaskClosable;
+    } else {
+      window.styleMask &= ~NSWindowStyleMaskClosable;
+    }
+  }
+  if (zoomable) {
+    NSButton *zoomBtn = [window standardWindowButton:NSWindowZoomButton];
+    if (zoomBtn) {
+      zoomBtn.enabled = zoomable.boolValue;
+    }
+  }
+  if (alwaysOnTop) {
+    window.level =
+        alwaysOnTop.boolValue ? NSFloatingWindowLevel : NSNormalWindowLevel;
+  } else if (level) {
+    if ([level isEqualToString:@"floating"]) {
+      window.level = NSFloatingWindowLevel;
+    } else if ([level isEqualToString:@"modalPanel"]) {
+      window.level = NSModalPanelWindowLevel;
+    } else if ([level isEqualToString:@"mainMenu"]) {
+      window.level = NSMainMenuWindowLevel;
+    } else if ([level isEqualToString:@"statusBar"]) {
+      window.level = NSStatusWindowLevel;
+    } else if ([level isEqualToString:@"screenSaver"]) {
+      window.level = NSScreenSaverWindowLevel;
+    } else {
+      window.level = NSNormalWindowLevel;
+    }
+  }
+  if (show) {
+    if (show.boolValue) {
+      if (focusOnCreate && focusOnCreate.boolValue) {
+        [window makeKeyAndOrderFront:nil];
+      } else {
+        [window orderFront:nil];
+      }
+    } else {
+      [window orderOut:nil];
+    }
+  }
+  if (autoSaveFrame) {
+    [window setFrameAutosaveName:autoSaveFrame];
+  }
+  if (stopShouldClose) {
+    [self setStopShouldClose:stopShouldClose.boolValue forWindowId:windowId];
+  }
+
+  return YES;
+}
+
 - (NSVisualEffectMaterial)materialForVibrancy:(NSString *)vibrancy {
   if ([vibrancy isEqualToString:@"sidebar"]) {
     return NSVisualEffectMaterialSidebar;

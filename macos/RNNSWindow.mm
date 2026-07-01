@@ -157,219 +157,85 @@ jsi::Value RNNSWindow::modifyWindow(jsi::Runtime &rt, jsi::String windowId,
   auto toNSString = [](const std::optional<std::string> &s) -> NSString * {
     return s ? [NSString stringWithUTF8String:s->c_str()] : nil;
   };
+  auto toNSNumber = [](const std::optional<double> &d) -> NSNumber * {
+    return d ? @(*d) : nil;
+  };
+  auto toNSBool = [](const std::optional<bool> &b) -> NSNumber * {
+    return b ? @(*b) : nil;
+  };
 
   NSString *nsWid = [NSString stringWithUTF8String:wid.c_str()];
-  std::optional<double> x = p.x, y = p.y, width = p.width, height = p.height;
-  std::optional<double> minWidth = p.minWidth, minHeight = p.minHeight;
-  std::optional<double> maxWidth = p.maxWidth, maxHeight = p.maxHeight;
-  std::optional<bool> center = p.center;
+  NSNumber *nx = toNSNumber(p.x);
+  NSNumber *ny = toNSNumber(p.y);
+  NSNumber *nWidth = toNSNumber(p.width);
+  NSNumber *nHeight = toNSNumber(p.height);
+  NSNumber *nMinWidth = toNSNumber(p.minWidth);
+  NSNumber *nMinHeight = toNSNumber(p.minHeight);
+  NSNumber *nMaxWidth = toNSNumber(p.maxWidth);
+  NSNumber *nMaxHeight = toNSNumber(p.maxHeight);
+  NSNumber *nCenter = toNSBool(p.center);
   NSString *title = toNSString(p.title);
   NSString *titleBarStyle = toNSString(p.titleBarStyle);
   NSString *vibrancy = toNSString(p.vibrancy);
   NSString *backgroundColor = toNSString(p.backgroundColor);
-  std::optional<bool> transparent = p.transparent;
-  std::optional<bool> hasShadow = p.hasShadow;
-  std::optional<bool> resizable = p.resizable;
-  std::optional<bool> movable = p.movable;
-  std::optional<bool> minimizable = p.minimizable;
-  std::optional<bool> closable = p.closable;
-  std::optional<bool> zoomable = p.zoomable;
-  std::optional<bool> alwaysOnTop = p.alwaysOnTop;
+  NSNumber *nTransparent = toNSBool(p.transparent);
+  NSNumber *nHasShadow = toNSBool(p.hasShadow);
+  NSNumber *nResizable = toNSBool(p.resizable);
+  NSNumber *nMovable = toNSBool(p.movable);
+  NSNumber *nMinimizable = toNSBool(p.minimizable);
+  NSNumber *nClosable = toNSBool(p.closable);
+  NSNumber *nZoomable = toNSBool(p.zoomable);
+  NSNumber *nAlwaysOnTop = toNSBool(p.alwaysOnTop);
   NSString *level = toNSString(p.level);
-  std::optional<bool> show = p.show;
-  std::optional<bool> focusOnCreate = p.focusOnCreate;
+  NSNumber *nShow = toNSBool(p.show);
+  NSNumber *nFocusOnCreate = toNSBool(p.focusOnCreate);
   NSString *autoSaveFrame = toNSString(p.autoSaveFrame);
-  std::optional<bool> stopShouldClose = p.stopShouldClose;
+  NSNumber *nStopShouldClose = toNSBool(p.stopShouldClose);
 
-  return createPromiseAsJSIValue(rt, [=,
-                                      this](jsi::Runtime &,
-                                            std::shared_ptr<Promise> promise) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-      NSWindow *window = [[RNNSWindowHelper shared] windowForId:nsWid];
-      if (!window) {
-        jsInvoker_->invokeAsync([promise, wid](jsi::Runtime &) {
-          promise->reject("Window not found: " + wid);
+  return createPromiseAsJSIValue(
+      rt, [=, this](jsi::Runtime &, std::shared_ptr<Promise> promise) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+          BOOL success =
+              [[RNNSWindowHelper shared] modifyWindow:nsWid
+                                                    x:nx
+                                                    y:ny
+                                                width:nWidth
+                                               height:nHeight
+                                             minWidth:nMinWidth
+                                            minHeight:nMinHeight
+                                             maxWidth:nMaxWidth
+                                            maxHeight:nMaxHeight
+                                               center:nCenter
+                                                title:title
+                                        titleBarStyle:titleBarStyle
+                                             vibrancy:vibrancy
+                                      backgroundColor:backgroundColor
+                                          transparent:nTransparent
+                                            hasShadow:nHasShadow
+                                            resizable:nResizable
+                                              movable:nMovable
+                                          minimizable:nMinimizable
+                                             closable:nClosable
+                                             zoomable:nZoomable
+                                          alwaysOnTop:nAlwaysOnTop
+                                                level:level
+                                                 show:nShow
+                                        focusOnCreate:nFocusOnCreate
+                                        autoSaveFrame:autoSaveFrame
+                                      stopShouldClose:nStopShouldClose];
+
+          if (!success) {
+            jsInvoker_->invokeAsync([promise, wid](jsi::Runtime &) {
+              promise->reject("Window not found: " + wid);
+            });
+            return;
+          }
+
+          jsInvoker_->invokeAsync([promise](jsi::Runtime &) {
+            promise->resolve(jsi::Value::undefined());
+          });
         });
-        return;
-      }
-
-      NSRect frame = window.frame;
-      BOOL frameChanged = NO;
-      if (x) {
-        frame.origin.x = *x;
-        frameChanged = YES;
-      }
-      if (y) {
-        frame.origin.y = *y;
-        frameChanged = YES;
-      }
-      if (width) {
-        frame.size.width = *width;
-        frameChanged = YES;
-      }
-      if (height) {
-        frame.size.height = *height;
-        frameChanged = YES;
-      }
-      if (frameChanged) {
-        [window setFrame:frame display:YES animate:YES];
-      }
-
-      if (minWidth || minHeight) {
-        window.minSize = NSMakeSize(minWidth.value_or(window.minSize.width),
-                                    minHeight.value_or(window.minSize.height));
-      }
-      if (maxWidth || maxHeight) {
-        window.maxSize = NSMakeSize(maxWidth.value_or(window.maxSize.width),
-                                    maxHeight.value_or(window.maxSize.height));
-      }
-
-      if (center && *center) {
-        [window center];
-      }
-      if (title) {
-        window.title = title;
-      }
-
-      // Title bar style
-      if (titleBarStyle) {
-        if ([titleBarStyle isEqualToString:@"hidden"]) {
-          window.titlebarAppearsTransparent = YES;
-          window.titleVisibility = NSWindowTitleHidden;
-          window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
-        } else if ([titleBarStyle isEqualToString:@"hiddenInset"]) {
-          window.titlebarAppearsTransparent = YES;
-          window.titleVisibility = NSWindowTitleHidden;
-          window.styleMask |= NSWindowStyleMaskFullSizeContentView;
-        } else if ([titleBarStyle isEqualToString:@"transparent"]) {
-          window.titlebarAppearsTransparent = YES;
-          window.titleVisibility = NSWindowTitleVisible;
-          window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
-        } else {
-          window.titlebarAppearsTransparent = NO;
-          window.titleVisibility = NSWindowTitleVisible;
-          window.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
-        }
-      }
-
-      // Background color
-      if (transparent) {
-        window.opaque = !*transparent;
-      }
-      if (backgroundColor) {
-        window.backgroundColor = [RCTConvert NSColor:backgroundColor];
-      }
-
-      // Shadow
-      if (hasShadow) {
-        window.hasShadow = *hasShadow;
-      }
-
-      // Vibrancy
-      if (vibrancy) {
-        // Remove existing visual effect view if any
-        NSView *content = window.contentView;
-        if ([content isKindOfClass:[NSVisualEffectView class]]) {
-          // Get the subviews (react root) and reparent
-          NSArray<NSView *> *subs = [content.subviews copy];
-          if ([vibrancy isEqualToString:@"none"]) {
-            if (subs.count > 0) {
-              window.contentView = subs[0];
-            }
-          } else {
-            NSVisualEffectView *ev = (NSVisualEffectView *)content;
-            ev.material =
-                [[RNNSWindowHelper shared] materialForVibrancy:vibrancy];
-          }
-        } else if (![vibrancy isEqualToString:@"none"]) {
-          NSVisualEffectView *ev =
-              [[NSVisualEffectView alloc] initWithFrame:content.bounds];
-          ev.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-          ev.blendingMode = NSVisualEffectBlendingModeBehindWindow;
-          ev.state = NSVisualEffectStateActive;
-          ev.material =
-              [[RNNSWindowHelper shared] materialForVibrancy:vibrancy];
-          content.frame = ev.bounds;
-          content.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
-          window.contentView = ev;
-          [ev addSubview:content];
-        }
-      }
-
-      if (resizable) {
-        if (*resizable) {
-          window.styleMask |= NSWindowStyleMaskResizable;
-        } else {
-          window.styleMask &= ~NSWindowStyleMaskResizable;
-        }
-      }
-      if (movable) {
-        window.movable = *movable;
-      }
-      if (minimizable) {
-        if (*minimizable) {
-          window.styleMask |= NSWindowStyleMaskMiniaturizable;
-        } else {
-          window.styleMask &= ~NSWindowStyleMaskMiniaturizable;
-        }
-      }
-      if (closable) {
-        if (*closable) {
-          window.styleMask |= NSWindowStyleMaskClosable;
-        } else {
-          window.styleMask &= ~NSWindowStyleMaskClosable;
-        }
-      }
-      if (zoomable) {
-        // NSWindow doesn't have a direct zoomable style mask;
-        // control via collectionBehavior or button
-        NSButton *zoomBtn = [window standardWindowButton:NSWindowZoomButton];
-        if (zoomBtn) {
-          zoomBtn.enabled = *zoomable;
-        }
-      }
-      if (alwaysOnTop) {
-        window.level =
-            *alwaysOnTop ? NSFloatingWindowLevel : NSNormalWindowLevel;
-      } else if (level) {
-        if ([level isEqualToString:@"floating"]) {
-          window.level = NSFloatingWindowLevel;
-        } else if ([level isEqualToString:@"modalPanel"]) {
-          window.level = NSModalPanelWindowLevel;
-        } else if ([level isEqualToString:@"mainMenu"]) {
-          window.level = NSMainMenuWindowLevel;
-        } else if ([level isEqualToString:@"statusBar"]) {
-          window.level = NSStatusWindowLevel;
-        } else if ([level isEqualToString:@"screenSaver"]) {
-          window.level = NSScreenSaverWindowLevel;
-        } else {
-          window.level = NSNormalWindowLevel;
-        }
-      }
-      if (show) {
-        if (*show) {
-          if (focusOnCreate && *focusOnCreate) {
-            [window makeKeyAndOrderFront:nil];
-          } else {
-            [window orderFront:nil];
-          }
-        } else {
-          [window orderOut:nil];
-        }
-      }
-      if (autoSaveFrame) {
-        [window setFrameAutosaveName:autoSaveFrame];
-      }
-      if (stopShouldClose) {
-        [[RNNSWindowHelper shared] setStopShouldClose:*stopShouldClose
-                                          forWindowId:nsWid];
-      }
-
-      jsInvoker_->invokeAsync([promise](jsi::Runtime &) {
-        promise->resolve(jsi::Value::undefined());
       });
-    });
-  });
 }
 
 jsi::Value RNNSWindow::listWindows(jsi::Runtime &rt) {
